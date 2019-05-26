@@ -1,6 +1,7 @@
-script_name('[BB]_PoliceHelp')
-script_author('Богдан Макарчук - Barry_Bradley')
-script_version('5.4')
+---------[ Script Meta ]--------------------------------
+script_name('GeekHelper')
+script_author('Oniel, CzarAlex')
+script_version('0.1')
 
 require 'lib.moonloader'
 local sampev = require 'lib.samp.events'
@@ -10,7 +11,7 @@ local bNotf, notf = pcall(import, 'imgui_notf.lua')
 local inicfg = require 'inicfg'
 local fa = require 'faIcons'
 encoding = require 'encoding'
-encoding.default = 'CP1251' 
+encoding.default = 'CP1251'
 u8 = encoding.UTF8
 
 ---------[ Начальные переменные ]--------------------------------
@@ -21,34 +22,34 @@ local wx, wy = 550, 350 -- размер окна imgui
 local help = imgui.ImBool(false) -- не запускаем при старте
 
 -- Если нет папки fonts - создаем
-if not doesDirectoryExist(getWorkingDirectory().."/config/PoliceHelp/fonts/") or not doesDirectoryExist(getWorkingDirectory().."/config/PoliceHelp/images/") then
-	createDirectory(getWorkingDirectory().."/config/PoliceHelp/fonts/")
-	createDirectory(getWorkingDirectory().."/config/PoliceHelp/images/")
+if not doesDirectoryExist(getWorkingDirectory().."/config/GeekHelper/fonts/") or not doesDirectoryExist(getWorkingDirectory().."/config/GeekHelper/images/") then
+	createDirectory(getWorkingDirectory().."/config/GeekHelper/fonts/")
+	createDirectory(getWorkingDirectory().."/config/GeekHelper/images/")
 end
 -- Если нет шрифта - скачаем
-if not doesFileExist(getWorkingDirectory().."/config/PoliceHelp/fonts/fontawesome.ttf") then
-	downloadUrlToFile("http://vigladios.ru/samp/file/policehelp/fontawesome-webfont.ttf", getWorkingDirectory().."/config/PoliceHelp/fonts/fontawesome.ttf")
+if not doesFileExist(getWorkingDirectory().."/config/GeekHelper/fonts/fontawesome.ttf") then
+	downloadUrlToFile("http://geekhub.pro/samp/file/GeekHelper/fontawesome-webfont.ttf", getWorkingDirectory().."/config/GeekHelper/fonts/fontawesome.ttf")
 end
 -- Если нет картинок - скачаем
-if not doesFileExist(getWorkingDirectory().."/config/PoliceHelp/images/button.png") or not doesFileExist(getWorkingDirectory().."/config/PoliceHelp/images/button2.png") then
-	downloadUrlToFile("http://vigladios.ru/samp/file/policehelp/button.png", getWorkingDirectory().."/config/PoliceHelp/images/button.png")
-	downloadUrlToFile("http://vigladios.ru/samp/file/policehelp/button2.png", getWorkingDirectory().."/config/PoliceHelp/images/button2.png")
+if not doesFileExist(getWorkingDirectory().."/config/GeekHelper/images/button.png") or not doesFileExist(getWorkingDirectory().."/config/GeekHelper/images/button2.png") then
+	downloadUrlToFile("http://geekhub.pro/samp/file/GeekHelper/button.png", getWorkingDirectory().."/config/GeekHelper/images/button.png")
+	downloadUrlToFile("http://geekhub.pro/samp/file/GeekHelper/button2.png", getWorkingDirectory().."/config/GeekHelper/images/button2.png")
 end
 
-local iniconfig = inicfg.load(nil, "PoliceHelp/PoliceHelp")
+local iniconfig = inicfg.load(nil, "GeekHelper/GeekHelper")
 if iniconfig == nil then
 	ini = {
 		settings = {
 			prefix = "LS:PD",
 		}
 	}
-	inicfg.save(ini, "PoliceHelp/PoliceHelp")
-	iniconfig = inicfg.load(nil, "PoliceHelp/PoliceHelp")
+	inicfg.save(ini, "GeekHelper/GeekHelper")
+	iniconfig = inicfg.load(nil, "GeekHelper/GeekHelper")
 end
 
-if not doesFileExist("moonloader/config/PoliceHelp/settings.json") then 
-		local f = io.open("moonloader/config/PoliceHelp/settings.json", "w") 
-		f:write(encodeJson({ 
+if not doesFileExist("moonloader/config/GeekHelper/settings.json") then
+		local f = io.open("moonloader/config/GeekHelper/settings.json", "w")
+		f:write(encodeJson({
 			nick = {
 				'Barry_Bradley',
 				'Ник друга',
@@ -60,46 +61,46 @@ if not doesFileExist("moonloader/config/PoliceHelp/settings.json") then
 				4280963554
 			},
 			skins = {
-				280, 
-				281, 
-				282, 
-				283, 
-				284, 
+				280,
+				281,
+				282,
+				283,
+				284,
 				285,
-				286, 
+				286,
 				288,
-				71, 
-				265, 
-				163, 
-				164, 
-				165, 
-				166, 
-				266, 
-				267, 
-				300, 
-				301, 
-				302, 
-				306, 
-				307, 
-				309, 
-				310, 
+				71,
+				265,
+				163,
+				164,
+				165,
+				166,
+				266,
+				267,
+				300,
+				301,
+				302,
+				306,
+				307,
+				309,
+				310,
 				311
 			},
-		}))  
-		f:close() 
-		local f = io.open("moonloader/config/PoliceHelp/settings.json", 'r')
-		if f then 
-			settings = decodeJson(f:read('*a')) 
-			f:close()
-		end 
-		
-else 
-	local f = io.open("moonloader/config/PoliceHelp/settings.json", 'r') 
-	if f then 
-		settings = decodeJson(f:read('*a')) 
+		}))
 		f:close()
-	end 
-		
+		local f = io.open("moonloader/config/GeekHelper/settings.json", 'r')
+		if f then
+			settings = decodeJson(f:read('*a'))
+			f:close()
+		end
+
+else
+	local f = io.open("moonloader/config/GeekHelper/settings.json", 'r')
+	if f then
+		settings = decodeJson(f:read('*a'))
+		f:close()
+	end
+
 end
 local color = settings["color"]
 local skins = settings["skins"]
@@ -131,14 +132,14 @@ function apply_custom_style()
 end
 apply_custom_style()
 
-local fa_font = nil 
+local fa_font = nil
 local fa_glyph_ranges = imgui.ImGlyphRanges({ fa.min_range, fa.max_range })
-function imgui.BeforeDrawFrame() 
-	if fa_font == nil then 
+function imgui.BeforeDrawFrame()
+	if fa_font == nil then
 		local font_config = imgui.ImFontConfig()
-		font_config.MergeMode = true 
-		fa_font = imgui.GetIO().Fonts:AddFontFromFileTTF('moonloader/config/PoliceHelp/fonts/fontawesome.ttf', 14.0, font_config, fa_glyph_ranges) 
-	end 
+		font_config.MergeMode = true
+		fa_font = imgui.GetIO().Fonts:AddFontFromFileTTF('moonloader/config/GeekHelper/fonts/fontawesome.ttf', 14.0, font_config, fa_glyph_ranges)
+	end
 end
 
 function sampev.onServerMessage(color, message)
@@ -163,9 +164,9 @@ end
 
 function main()
     repeat wait(0) until isSampAvailable()
-	vk = imgui.CreateTextureFromFile(getGameDirectory() .. '\\moonloader\\config\\PoliceHelp\\images\\button.png') -- подгрузка иконки
-	info = imgui.CreateTextureFromFile(getGameDirectory() .. '\\moonloader\\config\\PoliceHelp\\images\\button2.png') -- подгрузка иконки
-	sampAddChatMessage('Скрипт PoliceHelp - автор Barry_Bradley (Богдан Макарчук) | Команда: /myhelp', -1)
+	vk = imgui.CreateTextureFromFile(getGameDirectory() .. '\\moonloader\\config\\GeekHelper\\images\\button.png') -- подгрузка иконки
+	info = imgui.CreateTextureFromFile(getGameDirectory() .. '\\moonloader\\config\\GeekHelper\\images\\button2.png') -- подгрузка иконки
+	sampAddChatMessage('Скрипт GeekHelper - авторы Oniel & CzarAlex | Команда: /myhelp', -1)
 	if bNotf then
 		notf.addNotification('Скрипт для ПО запущен - /myhelp', 5.0, 2)
 	end
@@ -312,7 +313,7 @@ function main()
 	sampRegisterChatCommand('addprefix', function(prefix)
         if prefix ~= nil and prefix ~= '' then
 			iniconfig["settings"]["prefix"] = prefix
-			inicfg.save(iniconfig, "PoliceHelp/PoliceHelp")
+			inicfg.save(iniconfig, "GeekHelper/GeekHelper")
 			sampAddChatMessage('{ffffff}* [{cd0000}Trinity{ffffff}Police]: {cd0000}Вы успешно заменили префикс на: '..prefix, -1)
 		else
             sampAddChatMessage('{ffffff}* [{cd0000}Trinity{ffffff}Police]: {cd0000}Введите /addprefix [PREFIX]', -1)
@@ -388,7 +389,7 @@ function main()
     end)
 	sampRegisterChatCommand('myhelp', function()
 		help.v = not help.v
-	end) 
+	end)
     while true do
 		wait(0)
 		local valid, ped = getCharPlayerIsTargeting(PLAYER_HANDLE)
@@ -477,7 +478,7 @@ function imgui.OnDrawFrame()
         imgui.LockPlayer = true
 		imgui.SetNextWindowSize(imgui.ImVec2(wx, wy))
 		imgui.SetNextWindowPos(imgui.ImVec2(rx/2-wx/2, ry/2-wy/2))
-		
+
         imgui.Begin(u8('POLICE HELP'), help, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize)
         imgui.BeginChild('left', imgui.ImVec2(128, 0), true)
 			if imgui.ImageButton(vk, imgui.ImVec2(120, 30), imgui.ImVec2(0, 0), imgui.ImVec2(1, 1), 0, imgui.ImVec4(0, 0, 0, 1)) then
@@ -488,107 +489,107 @@ function imgui.OnDrawFrame()
 			end
 		imgui.EndChild()
 		imgui.SameLine()
-		
+
 		imgui.BeginChild('right', imgui.ImVec2(0, 0), true)
 			imgui.Spacing()
 			imgui.Separator()
-				
-	
+
+
 				imgui.Text('  ' .. fa.ICON_THUMB_TACK .. u8(' Команды скрипта:'))
 			imgui.Spacing()
 			imgui.Separator()
 			--imgui.NewLine()
-				
-			imgui.Text('           ' .. fa.ICON_INFO_CIRCLE .. u8(' Основная команда, помощь -')); imgui.SameLine() 
+
+			imgui.Text('           ' .. fa.ICON_INFO_CIRCLE .. u8(' Основная команда, помощь -')); imgui.SameLine()
 				if imgui.Button(u8(" /myhelp ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Выводит список всех команд и действий скрипта", -1)
 				end
-			imgui.SameLine() 
+			imgui.SameLine()
 			ShowHelpMarker(u8("> Если нажать на кнопку с командой, то можно узнать больше информации"))
-			
-			imgui.Text('           ' .. fa.ICON_ID_CARD_O .. u8(' Спросить документы -')); imgui.SameLine() 
+
+			imgui.Text('           ' .. fa.ICON_ID_CARD_O .. u8(' Спросить документы -')); imgui.SameLine()
 				if imgui.Button(u8(" /pp ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Автоматически спросит документы у ближнего игрока, а так же покажет /ens и сделает /frisk", -1)
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Но если игрок который ближе всего к вам (не ПО), в машине, то скрипт автоматически скажет чтоб покинули ТС", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_CAR .. u8(' Попросить покинуть ТС -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_CAR .. u8(' Попросить покинуть ТС -')); imgui.SameLine()
 				if imgui.Button(u8(" /nn ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Автоматически попросит покинуть ТС у ближайшего игрока (не ПО). Но лучше используйте /pp", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_CAR .. u8(' Попросить остановить ТС -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_CAR .. u8(' Попросить остановить ТС -')); imgui.SameLine()
 				if imgui.Button(u8(" /ss ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Автоматически берет ID ближайшего игрока и говорит ему в рупорт об остановке (если нет рупорта или вы не в ТС, то говорит в /s)", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_HANDSHAKE_O .. u8(' Попрощаться с игроком -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_HANDSHAKE_O .. u8(' Попрощаться с игроком -')); imgui.SameLine()
 				if imgui.Button(u8(" /cc ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Автоматически берет ID ближайшего игрока и прощаеться с ним", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_SEARCH .. u8(' Обыск ближайшего игрока -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_SEARCH .. u8(' Обыск ближайшего игрока -')); imgui.SameLine()
 				if imgui.Button(u8(" /fri ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Обыскивает ближайшего игрока (так же как: /frisk [ID] только ID подставит скрипт сам)", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_SIGN_LANGUAGE .. u8(' Надеть наручники на ближайшего игрока -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_SIGN_LANGUAGE .. u8(' Надеть наручники на ближайшего игрока -')); imgui.SameLine()
 				if imgui.Button(u8(" /cu ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Надеть наручники на ближайшего игрока (так же как: /cuff [ID] только ID подставит скрипт сам)", -1)
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Перед тем как надеть нужно ударить игрока ТАЙЗЕРОМ", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_SIGN_LANGUAGE .. u8(' Снять наручники с ближайшего игрока -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_SIGN_LANGUAGE .. u8(' Снять наручники с ближайшего игрока -')); imgui.SameLine()
 				if imgui.Button(u8(" /uncu ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Снимает наручники в ближайшего игрока (так же как: /uncuff [ID] только ID подставит скрипт сам)", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_STAR .. u8(' Начать преследовать ближайшего игрока -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_STAR .. u8(' Начать преследовать ближайшего игрока -')); imgui.SameLine()
 				if imgui.Button(u8(" /ze ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Начать преследовать ближайшего игрока (так же как: /z [ID] только ID подставит скрипт сам)", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_LANGUAGE .. u8(' Сменить префикс возле сообщений -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_LANGUAGE .. u8(' Сменить префикс возле сообщений -')); imgui.SameLine()
 				if imgui.Button(u8(" /addprefix ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Изменение префикса возле каждого сообщения что скрипт пишит игроку. Пример префикса: [LS:PD], [FBI] и т.д", -1)
 				end
-				
+
 			imgui.Spacing()
 			imgui.Separator()
 				imgui.Text('  ' .. fa.ICON_THUMB_TACK .. u8(' Команды которые работають через /addid :'));
 			imgui.Spacing()
 			imgui.Separator()
-				
-			imgui.Text('           ' .. fa.ICON_PLUS_CIRCLE .. u8(' Добавляем ID игрока -')); imgui.SameLine() 
+
+			imgui.Text('           ' .. fa.ICON_PLUS_CIRCLE .. u8(' Добавляем ID игрока -')); imgui.SameLine()
 				if imgui.Button(u8(" /addid ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Если Вы добавите ID игрока то сможете использовать команды в которых нужен ID.", -1)
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Полезная функция если Вы преследуете кого либо, раз ввели ID и преследуете.", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_STREET_VIEW .. u8(' Поиск игрока -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_STREET_VIEW .. u8(' Поиск игрока -')); imgui.SameLine()
 				if imgui.Button(u8(" /finder ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Поиск игрока (так же как: /find [ID] только ID добавляем через /addid [ID])", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_STAR .. u8(' Начать преследовать -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_STAR .. u8(' Начать преследовать -')); imgui.SameLine()
 				if imgui.Button(u8(" /zgo ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Начать преследовать игрока (так же как: /z [ID] только ID добавляем через /addid [ID])", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_CAR .. u8(' Начать конвоирование -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_CAR .. u8(' Начать конвоирование -')); imgui.SameLine()
 				if imgui.Button(u8(" /deti ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Начать конвоирование игрока (так же как: /det [ID] только ID добавляем через /addid [ID])", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_STAR_HALF_O .. u8(' Закончить конвоирование -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_STAR_HALF_O .. u8(' Закончить конвоирование -')); imgui.SameLine()
 				if imgui.Button(u8(" /deli ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Закончить конвоирование игрока (так же как: /delive [ID] только ID добавляем через /addid [ID])", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_TIMES_CIRCLE .. u8(' Запретить выход игрока через [/bail] -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_TIMES_CIRCLE .. u8(' Запретить выход игрока через [/bail] -')); imgui.SameLine()
 				if imgui.Button(u8(" /unb ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Запретить выход игрока за деньги (так же как: /unbail [ID] только ID добавляем через /addid [ID])", -1)
 				end
-			imgui.Text('           ' .. fa.ICON_STAR_O .. u8(' Узнать уровень игрока -')); imgui.SameLine() 
+			imgui.Text('           ' .. fa.ICON_STAR_O .. u8(' Узнать уровень игрока -')); imgui.SameLine()
 				if imgui.Button(u8(" /lvl [ID] ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Узнаем уровень игрока по его ID.", -1)
 				end
-					
+
 				--imgui.NewLine()
-				
+
 			imgui.Spacing()
 			imgui.Separator()
 				imgui.Text('  ' .. fa.ICON_THUMB_TACK .. u8(' Доп. функции скрипта:'));
 			imgui.Spacing()
 			imgui.Separator()
-				
+
 			imgui.Text('           ' .. fa.ICON_CROSSHAIRS .. u8(' Надеть наручники на игрока -')); imgui.SameLine()
 				if imgui.Button(u8(" ПКМ + 1 ")) then
 					sampAddChatMessage("{32CD32}[BB]{FFFFF0} Надевает наручники на игрока на которого вы нацелились и в это время нажали '1'", -1)
@@ -627,7 +628,7 @@ function imgui.OnDrawFrame()
 end
 -- Функция которая создает текст при наводе на  знак "?" || Использовать: ShowHelpMarker('Text')
 function ShowHelpMarker(desc)
-    imgui.TextDisabled(fa.ICON_QUESTION_CIRCLE) 
+    imgui.TextDisabled(fa.ICON_QUESTION_CIRCLE)
     if imgui.IsItemHovered() then
         imgui.BeginTooltip()
         imgui.PushTextWrapPos(imgui.GetFontSize() * 35.0)
@@ -635,7 +636,7 @@ function ShowHelpMarker(desc)
         imgui.PopTextWrapPos()
         imgui.EndTooltip()
     end
-end 
+end
 
 -- Остальные функции
 function hasValue (tab, val)

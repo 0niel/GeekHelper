@@ -102,7 +102,49 @@ patch()
 ------------------------------- MAIN ----------------------------------------------
 -----------------------------------------------------------------------------------
 function main()
-	if not isSampLoaded() or not isSampfuncsLoaded() then return end
-	while not isSampAvailable() do wait(100) end
+	if not isSampfuncsLoaded() or not isSampLoaded() then -- Если SF или SA:MP не загружены
+    return -- Завершаем работу скрипта
 end
+while not isSampAvailable() do -- Ждём пока функция isSampAvailable() вернет true
+    wait(0) -- Устанавливаем минимальное ожидание, что бы наша игра не зависла
+    -- значение 0 говорит что мы ждём следующий кадр (Frame)
+end
+print("Начинаем подгрузку скрипта и его составляющих")
+sampAddChatMessage("[GeekHelper] {FFFFFF}Скрипт подгружен в игру, версия: {00C2BB}"..thisScript().version.."{ffffff}, начинаем инициализацию.", 0x046D63)
+update()
+end
+
+
 -----------------------------------------------------------------------------------
+function update() -- проверка обновлений
+	local zapros = https.request("https://geekhub.pro/samp/geekhelper/version.json")
+
+	if zapros ~= nil then
+		local info2 = decodeJson(zapros)
+
+		if info2.latest_number ~= nil and info2.latest ~= nil then
+			updatever = info2.latest
+			version = tonumber(info2.latest_number)
+
+			print("[Update] Начинаем контроль версий")
+
+			if version > tonumber(thisScript().version_num) then
+				print("[Update] Обнаружено обновление")
+				sampAddChatMessage("[GeekHelper]{FFFFFF} Обнаружено обновление до версии "..updatever..".", 0x046D63)
+				win_state['update'].v = true
+			else
+				print("[Update] Новых обновлений нет, контроль версий пройден")
+				if checkupd then
+					sampAddChatMessage("[GeekHelper]{FFFFFF} У вас стоит актуальная версия скрипта: "..thisScript().version..".", 0x046D63)
+					sampAddChatMessage("[GeekHelper]{FFFFFF} Необходимости обновлять скрипт - нет, приятного пользования.", 0x046D63)
+					checkupd = false
+				end
+			end
+		else
+			sampAddChatMessage("[GeekHelper]{FFFFFF} Ошибка при получении информации об обновлении.", 0x046D63)
+			print("[Update] JSON file read error")
+		end
+	else
+		sampAddChatMessage("[GeekHelper]{FFFFFF} Не удалось проверить наличие обновлений, попробуйте позже.", 0x046D63)
+	end
+end

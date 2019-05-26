@@ -9,22 +9,23 @@ local utils = require 'lib.samp.events.utils'
 local handler = {}
 
 --- onSendGiveDamage, onSendTakeDamage
-function handler.on_send_give_take_damage_reader(bs)
+function handler.send_give_take_damage_reader(bs, take)
 	local read = BitStreamIO.bs_read
-	local take = read.bool(bs) -- 'true' is take damage
+	if read.bool(bs) ~= take then -- 'true' is take damage
+		return false
+	end
 	local data = {
 		read.int16(bs), -- playerId
 		read.float(bs), -- damage
 		read.int32(bs), -- weapon
 		read.int32(bs), -- bodypart
-		take,
 	}
-	return (take and 'onSendTakeDamage' or 'onSendGiveDamage'), data
+	return data
 end
 
-function handler.on_send_give_take_damage_writer(bs, data)
+function handler.send_give_take_damage_writer(bs, data, take)
 	local write = BitStreamIO.bs_write
-	write.bool(bs, data[5]) -- give or take
+	write.bool(bs, take) -- give or take
 	write.int16(bs, data[1]) -- playerId
 	write.float(bs, data[2]) -- damage
 	write.int32(bs, data[3]) -- weapon
@@ -32,7 +33,7 @@ function handler.on_send_give_take_damage_writer(bs, data)
 end
 
 
---- onInitGame
+--- OnInitGame
 function handler.on_init_game_reader(bs)
 	local read                     = BitStreamIO.bs_read
 	local settings                 = {}
@@ -107,7 +108,7 @@ function handler.on_init_game_writer(bs, data)
 end
 
 
---- onInitMenu
+--- OnInitMenu
 function handler.on_init_menu_reader(bs)
 	local read = BitStreamIO.bs_read
 	local colWidth2
@@ -319,7 +320,7 @@ function handler.on_vehicle_sync_writer(bs, data)
 end
 
 
---- onVehicleStreamIn
+--- onVehicleSteamIn
 function handler.on_vehicle_stream_in_reader(bs)
 	local read = BitStreamIO.bs_read
 	local data = {modSlots = {}}
@@ -410,7 +411,6 @@ function handler.on_show_textdraw_writer(bs, data)
 	write.int8(bs, data.shadow)
 	write.int8(bs, data.outline)
 	write.int32(bs, data.backgroundColor)
-	write.int8(bs, data.style)
 	write.int8(bs, data.selectable)
 	write.vector2d(bs, data.position)
 	write.int16(bs, data.modelId)
@@ -420,12 +420,6 @@ function handler.on_show_textdraw_writer(bs, data)
 	write.string16(bs, data.text)
 end
 
-local MATERIAL_TYPE = {
-	NONE = 0,
-	TEXTURE = 1,
-	TEXT = 2,
-}
-
 local function read_object_material(bs)
 	local read = BitStreamIO.bs_read
 	local data = {}
@@ -434,13 +428,12 @@ local function read_object_material(bs)
 	data.libraryName = read.string8(bs)
 	data.textureName = read.string8(bs)
 	data.color = read.int32(bs)
-	data.type = MATERIAL_TYPE.TEXTURE
 	return data
 end
 
 local function write_object_material(bs, data)
 	local write = BitStreamIO.bs_write
-	write.int8(bs, data.type)
+	write.int8(bs, 1)
 	write.int8(bs, data.materialId)
 	write.int16(bs, data.modelId)
 	write.string8(bs, data.libraryName)
@@ -460,13 +453,12 @@ local function read_object_material_text(bs)
 	data.backGroundColor = read.int32(bs)
 	data.align = read.int8(bs)
 	data.text = read.encodedString2048(bs)
-	data.type = MATERIAL_TYPE.TEXT
 	return data
 end
 
 local function write_object_material_text(bs, data)
 	local write = BitStreamIO.bs_write
-	write.int8(bs, data.type)
+	write.int8(bs, 2)
 	write.int8(bs, data.materialId)
 	write.int8(bs, data.materialSize)
 	write.string8(bs, data.fontName)
@@ -478,30 +470,31 @@ local function write_object_material_text(bs, data)
 	write.encodedString2048(bs, data.text)
 end
 
+
 --- onSetObjectMaterial
-function handler.on_set_object_material_reader(bs)
+function handler.on_set_object_material_reader(bs, t)
 	local read = BitStreamIO.bs_read
 	local objectId = read.int16(bs)
-	local materialType = read.int8(bs)
+	local actionType = read.int8(bs)
+	if actionType ~= t then return false end
 	local material
-	if materialType == MATERIAL_TYPE.TEXTURE then
+	if actionType == 1 then
 		material = read_object_material(bs)
-	elseif materialType == MATERIAL_TYPE.TEXT then
+	elseif actionType == 2 then
 		material = read_object_material_text(bs)
 	end
-	local ev = materialType == MATERIAL_TYPE.TEXTURE and 'onSetObjectMaterial' or 'onSetObjectMaterialText'
-	return ev, {objectId, material}
+	return {objectId, material}
 end
 
-function handler.on_set_object_material_writer(bs, data)
+function handler.on_set_object_material_writer(bs, data, t)
 	local write = BitStreamIO.bs_write
 	local objectId = data[1]
-	local mat = data[2]
+	local data = data[2]
 	write.int16(bs, objectId)
-	if mat.type == MATERIAL_TYPE.TEXTURE then
-		write_object_material(bs, mat)
-	elseif mat.type == MATERIAL_TYPE.TEXT then
-		write_object_material_text(bs, mat)
+	if t == 1 then
+		write_object_material(bs, data)
+	elseif t == 2 then
+		write_object_material_text(bs, data)
 	end
 end
 
@@ -509,32 +502,31 @@ end
 --- onCreateObject
 function handler.on_create_object_reader(bs)
 	local read = BitStreamIO.bs_read
-	local data = {materials = {}, materialText = {}}
+	local data = {materials = {}, materials_text = {}}
 	local objectId = read.int16(bs)
 	data.modelId = read.int32(bs)
 	data.position = read.vector3d(bs)
 	data.rotation = read.vector3d(bs)
 	data.drawDistance = read.float(bs)
-	data.noCameraCol = read.bool8(bs)
+	data.unk1 = read.int8(bs)
 	data.attachToVehicleId = read.int16(bs)
-	data.attachToObjectId = read.int16(bs)
+	data.attachToPlayerId = read.int16(bs)
 	if data.attachToVehicleId ~= 65535 or data.attachToPlayerId ~= 65535 then
 		data.attachOffsets = read.vector3d(bs)
 		data.attachRotation = read.vector3d(bs)
-		data.syncRotation = read.bool8(bs)
+		data.unk2 = read.int8(bs)
 	end
 	data.texturesCount = read.int8(bs)
 
-	local materialType
-	while raknetBitStreamGetNumberOfUnreadBits(bs) >= 8 do
-		materialType = read.int8(bs)
-		if materialType == MATERIAL_TYPE.TEXTURE then
+	local actionType = 0
+	while raknetBitStreamGetNumberOfUnreadBits(bs) > 0 do
+		actionType = read.int8(bs)
+		if actionType == 1 then
 			table.insert(data.materials, read_object_material(bs))
-		elseif materialType == MATERIAL_TYPE.TEXT then
-			table.insert(data.materialText, read_object_material_text(bs))
+		elseif actionType == 2 then
+			table.insert(data.materials_text, read_object_material_text(bs))
 		end
 	end
-	data.materials_text = data.materialText -- obsolete
 	return {objectId, data}
 end
 
@@ -547,20 +539,20 @@ function handler.on_create_object_writer(bs, data)
 	write.vector3d(bs, data.position)
 	write.vector3d(bs, data.rotation)
 	write.float(bs, data.drawDistance)
-	write.bool8(bs, data.noCameraCol)
+	write.int8(bs, data.unk1)
 	write.int16(bs, data.attachToVehicleId)
-	write.int16(bs, data.attachToObjectId)
+	write.int16(bs, data.attachToPlayerId)
 	if data.attachToVehicleId ~= 65535 or data.attachToPlayerId ~= 65535 then
 		write.vector3d(bs, data.attachOffsets)
 		write.vector3d(bs, data.attachRotation)
-		write.bool8(bs, data.syncRotation)
+		write.int8(bs, data.unk2)
 	end
 	write.int8(bs, data.texturesCount)
 
 	for _, it in ipairs(data.materials) do
 		write_object_material(bs, it)
-	end
-	for _, it in ipairs(data.materialText) do
+	end	
+	for _, it in ipairs(data.materials_text) do
 		write_object_material_text(bs, it)
 	end
 end

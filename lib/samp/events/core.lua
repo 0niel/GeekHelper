@@ -55,19 +55,16 @@ local function process_event(bs, callback, struct, ignorebits)
 	local args = {}
 	if bs ~= 0 then
 		if ignorebits then
+			-- skip packet id
 			raknetBitStreamIgnoreBits(bs, ignorebits)
 		end
+
 		if type(struct[2]) == 'function' then
-			local r1, r2 = struct[2](bs) -- call custom reading function
-			if type(callback) == 'table' and type(r1) == 'string' then
-				callback = callback[r1]
-				if callback then
-					args = r2
-				else
-					return
-				end
-			else
-				args = r1
+			args = struct[2](bs) -- call custom reading function
+			if args == false then
+				-- stop processing if custom reader returns false
+				raknetBitStreamResetReadPointer(bs)
+				return
 			end
 		else
 			-- skip event name
@@ -98,20 +95,20 @@ end
 local function process_packet(id, bs, event_table, ignorebits)
 	local entry = event_table[id]
 	if entry ~= nil then
-		local key = entry[1]
-		local callback = nil
-		if type(key) == 'table' then
-			for i, name in ipairs(key) do
-				if type(MODULE[name]) == 'function' then
-					if not callback then callback = {} end
-					callback[name] = MODULE[name]
+		if type(entry[1]) ~= 'table' then
+			if type(MODULE[entry[1]]) == 'function' then
+				if process_event(bs, MODULE[entry[1]], entry, ignorebits) == false then
+					return false
 				end
 			end
-		elseif type(MODULE[key]) == 'function' then
-			callback = MODULE[key]
-		end
-		if callback then
-			return process_event(bs, callback, entry, ignorebits)
+		else
+			for _, item in ipairs(entry) do
+				if type(MODULE[item[1]]) == 'function' then
+					if process_event(bs, MODULE[item[1]], item, ignorebits) == false then
+						return false
+					end
+				end
+			end
 		end
 	end
 end
@@ -119,19 +116,19 @@ end
 
 local interface = MODULE.INTERFACE
 local function samp_on_send_rpc(id, bitStream, priority, reliability, orderingChannel, shiftTs)
-	return process_packet(id, bitStream, interface.OUTCOMING_RPCS)
+	if process_packet(id, bitStream, interface.OUTCOMING_RPCS) == false then return false end
 end
 
 local function samp_on_send_packet(id, bitStream, priority, reliability, orderingChannel)
-	return process_packet(id, bitStream, interface.OUTCOMING_PACKETS, 8)
+	if process_packet(id, bitStream, interface.OUTCOMING_PACKETS, 8) == false then return false end
 end
 
 local function samp_on_receive_rpc(id, bitStream)
-	return process_packet(id, bitStream, interface.INCOMING_RPCS)
+	if process_packet(id, bitStream, interface.INCOMING_RPCS) == false then return false end
 end
 
 local function samp_on_receive_packet(id, bitStream)
-	return process_packet(id, bitStream, interface.INCOMING_PACKETS, 8)
+	if process_packet(id, bitStream, interface.INCOMING_PACKETS, 8) == false then return false end
 end
 
 addEventHandler('onSendRpc', samp_on_send_rpc)

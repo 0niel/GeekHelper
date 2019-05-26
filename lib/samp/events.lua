@@ -42,8 +42,16 @@ OUTCOMING_RPCS[RPC.VEHICLEDESTROYED]          = {'onSendVehicleDestroyed', {vehi
 OUTCOMING_RPCS[RPC.MENUQUIT]                  = {'onSendQuitMenu'}
 OUTCOMING_RPCS[RPC.EXITVEHICLE]               = {'onSendExitVehicle', {vehicleId = 'int16'}}
 OUTCOMING_RPCS[RPC.UPDATESCORESPINGSIPS]      = {'onSendUpdateScoresAndPings'}
--- playerId = 'int16', damage = 'float', weapon = 'int32', bodypart ='int32'
-OUTCOMING_RPCS[RPC.GIVETAKEDAMAGE]            = {{'onSendGiveDamage', 'onSendTakeDamage'}, handler.on_send_give_take_damage_reader, handler.on_send_give_take_damage_writer}
+OUTCOMING_RPCS[RPC.GIVETAKEDAMAGE]            = {
+	-- playerId = 'int16', damage = 'float', weapon = 'int32', bodypart ='int32'
+	{'onSendGiveDamage',
+	function(bs) return handler.send_give_take_damage_reader(bs, false) end,
+	function(bs, data) return handler.send_give_take_damage_writer(bs, data, false) end},
+	-- playerId = 'int16', damage = 'float', weapon = 'int32', bodypart ='int32'
+	{'onSendTakeDamage',
+	function(bs) return handler.send_give_take_damage_reader(bs, true) end,
+	function(bs, data) return handler.send_give_take_damage_writer(bs, data, true) end}
+}
 
 -- Incoming rpcs
 -- int playerId, string hostName, table settings, table vehicleModels, int unknown
@@ -99,7 +107,7 @@ INCOMING_RPCS[RPC.SETPLAYERTEAM]              = {'onSetPlayerTeam', {playerId = 
 INCOMING_RPCS[RPC.PUTPLAYERINVEHICLE]         = {'onPutPlayerInVehicle', {vehicleId = 'int16'}, {seatId = 'int8'}}
 INCOMING_RPCS[RPC.REMOVEPLAYERFROMVEHICLE]    = {'onRemovePlayerFromVehicle'}
 INCOMING_RPCS[RPC.SETPLAYERCOLOR]             = {'onSetPlayerColor', {playerId = 'int16'}, {color = 'int32'}}
-INCOMING_RPCS[RPC.DISPLAYGAMETEXT]            = {'onDisplayGameText', {style = 'int32'}, {time = 'int32'}, {text = 'string32'}}
+INCOMING_RPCS[RPC.DISPLAYGAMETEXT]            = {'onDisplayGameText', {style = 'int32'}, {time = 'int32'}, {text = 'string8'}}
 INCOMING_RPCS[RPC.FORCECLASSSELECTION]        = {'onForceClassSelection'}
 INCOMING_RPCS[RPC.ATTACHOBJECTTOPLAYER]       = {'onAttachObjectToPlayer', {objectId = 'int16'}, {playerId = 'int16'}, {offsets = 'vector3d'}, {rotation = 'vector3d'}}
 -- menuId = 'int8', menuTitle = 'string256', x = 'float', y = 'float', twoColumns = 'bool32', columns = 'table', rows = 'table', menu = 'bool32'
@@ -159,32 +167,37 @@ INCOMING_RPCS[RPC.WORLDVEHICLEREMOVE]         = {'onVehicleStreamOut', {vehicleI
 INCOMING_RPCS[RPC.WORLDPLAYERDEATH]           = {'onPlayerDeath', {playerId = 'int16'}}
 INCOMING_RPCS[RPC.ENTERVEHICLE]               = {'onPlayerEnterVehicle', {playerId = 'int16'}, {vehicleId = 'int16'}, {passenger = 'bool8'}}
 INCOMING_RPCS[RPC.UPDATESCORESPINGSIPS]       = {'onUpdateScoresAndPings', {playerList = 'PlayerScorePingMap'}}
-INCOMING_RPCS[RPC.SETOBJECTMATERIAL]          = {{'onSetObjectMaterial', 'onSetObjectMaterialText'}, handler.on_set_object_material_reader, handler.on_set_object_material_writer}
-INCOMING_RPCS[RPC.CREATEACTOR]                = {'onCreateActor', {actorId = 'int16'}, {skinId = 'int32'}, {position = 'vector3d'}, {rotation = 'float'}, {health = 'float'}}
-INCOMING_RPCS[RPC.CLICKTEXTDRAW]              = {'onToggleSelectTextDraw', {state = 'bool'}, {hovercolor = 'int32'}}
+INCOMING_RPCS[RPC.SETOBJECTMATERIAL]          = {
+	{'onSetObjectMaterial',
+		function(bs) return handler.on_set_object_material_reader(bs, 1) end,
+		function(bs, data) return handler.on_set_object_material_writer(bs, data, 1) end},
+	{'onSetObjectMaterialText',
+		function(bs) return handler.on_set_object_material_reader(bs, 2) end,
+		function(bs, data) return handler.on_set_object_material_writer(bs, data, 2) end}
+}
 INCOMING_RPCS[RPC.SETVEHICLEPARAMSEX]         = {'onSetVehicleParamsEx',
   {vehicleId = 'int16'},
   {params = {
-    {engine = 'int8'},
-    {lights = 'int8'},
-    {alarm = 'int8'},
-    {doors = 'int8'},
-    {bonnet = 'int8'},
-    {boot = 'int8'},
-    {objective = 'int8'},
-    {unknown = 'int8'}
+    {engine = 'bool8'},
+    {lights = 'bool8'},
+    {alarm = 'bool8'},
+    {doors = 'bool8'},
+    {bonnet = 'bool8'},
+    {boot = 'bool8'},
+    {objective = 'bool8'},
+    {unknown = 'bool8'}
   }},
   {doors = {
-    {driver = 'int8'},
-    {passenger = 'int8'},
-    {backleft = 'int8'},
-    {backright = 'int8'}
+    {driver = 'bool8'},
+    {passenger = 'bool8'},
+    {backleft = 'bool8'},
+    {backright = 'bool8'}
   }},
   {windows = {
-    {driver = 'int8'},
-    {passenger = 'int8'},
-    {backleft = 'int8'},
-    {backright = 'int8'}
+    {driver = 'bool8'},
+    {passenger = 'bool8'},
+    {backleft = 'bool8'},
+    {backright = 'bool8'}
   }}
 }
 INCOMING_RPCS[RPC.SETPLAYERATTACHEDOBJECT]    = {'onSetPlayerAttachedObject',

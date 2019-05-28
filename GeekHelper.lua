@@ -131,13 +131,17 @@ function update() -- проверка обновлений
 
 			if version > tonumber(thisScript().version_num) then
 				print("[GeekHelper] Обнаружено обновление")
-				notf.addNotification(" Обнаружено обновление до версии "..updatever..".", 5, 2)
+				if bNotf then
+					notf.addNotification(" Обнаружено обновление до версии "..updatever..".", 5, 2)
+				end
 				sampAddChatMessage("[GeekHelper]{FFFFFF} Обнаружено обновление до версии "..updatever..".", 0x046D63)
 				win_state['update'].v = true
 			else
 				print("[GeekHelper] Новых обновлений нет, контроль версий пройден")
 				if checkupd then
-					notf.addNotification("У вас стоит актуальная версия скрипта: "..thisScript().version..".\nНеобходимости обновлять скрипт нет, приятного пользования.", 5, 2)
+					if bNotf then
+						notf.addNotification("У вас стоит актуальная версия скрипта: "..thisScript().version..".\nНеобходимости обновлять скрипт нет, приятного пользования.", 5, 2)
+					end
 					sampAddChatMessage("[GeekHelper]{FFFFFF} У вас стоит актуальная версия скрипта: "..thisScript().version..".", 0x046D63)
 					sampAddChatMessage("[GeekHelper]{FFFFFF} Необходимости обновлять скрипт - нет, приятного пользования.", 0x046D63)
 					checkupd = false

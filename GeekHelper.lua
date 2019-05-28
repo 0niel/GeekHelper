@@ -54,6 +54,7 @@ assert(res, 'Library basexx not found')
 ---------------------------------------------------------------
 local res, fa = pcall(require, 'faIcons')
 assert(res, 'Library faIcons not found')
+local bNotf, notf = pcall(import, "imgui_notf.lua")
 -----------------------------------------------------------------------------------
 
 encoding = require 'encoding'
@@ -126,15 +127,17 @@ function update() -- проверка обновлений
 			updatever = info2.latest
 			version = tonumber(info2.latest_number)
 
-			print("[Update] Начинаем контроль версий")
+			print("[GeekHelper] Начинаем контроль версий")
 
 			if version > tonumber(thisScript().version_num) then
-				print("[Update] Обнаружено обновление")
+				print("[GeekHelper] Обнаружено обновление")
+				notf.addNotification(" Обнаружено обновление до версии "..updatever..".", 5, 2)
 				sampAddChatMessage("[GeekHelper]{FFFFFF} Обнаружено обновление до версии "..updatever..".", 0x046D63)
 				win_state['update'].v = true
 			else
-				print("[Update] Новых обновлений нет, контроль версий пройден")
+				print("[GeekHelper] Новых обновлений нет, контроль версий пройден")
 				if checkupd then
+					notf.addNotification("У вас стоит актуальная версия скрипта: "..thisScript().version..".\nНеобходимости обновлять скрипт нет, приятного пользования.", 5, 2)
 					sampAddChatMessage("[GeekHelper]{FFFFFF} У вас стоит актуальная версия скрипта: "..thisScript().version..".", 0x046D63)
 					sampAddChatMessage("[GeekHelper]{FFFFFF} Необходимости обновлять скрипт - нет, приятного пользования.", 0x046D63)
 					checkupd = false
@@ -142,7 +145,7 @@ function update() -- проверка обновлений
 			end
 		else
 			sampAddChatMessage("[GeekHelper]{FFFFFF} Ошибка при получении информации об обновлении.", 0x046D63)
-			print("[Update] JSON file read error")
+			print("[GeekHelper] JSON file read error")
 		end
 	else
 		sampAddChatMessage("[GeekHelper]{FFFFFF} Не удалось проверить наличие обновлений, попробуйте позже.", 0x046D63)

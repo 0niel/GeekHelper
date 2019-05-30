@@ -1,7 +1,8 @@
 ---------[ Script Meta ]--------------------------------
 script_name('GeekHelper')
 script_authors('Oniel', 'CzarAlex')
-script_version('0.1')
+script_version_number(1)
+script_version("0.1")
 
 local res = pcall(require, "lib.moonloader")
 assert(res, 'Library lib.moonloader not found')
@@ -61,8 +62,8 @@ encoding = require 'encoding'
 encoding.default = 'CP1251'
 u8 = encoding.UTF8
 
----------[ МЕСТО ДЛЯ ЛОКАЛЬНЫХ ПЕРЕМЕННЫХ ]---------------------------------------
--- массив для окон
+---------[ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ ]---------------------------------------
+-- пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 local win_state = {}
 win_state['update'] = imgui.ImBool(false)
 win_state['main'] = imgui.ImBool(false)
@@ -80,14 +81,14 @@ local SET = {
 	}
 	}
 -----------------------------------------------------------------------------------
-------------------------------- ФИКСЫ ---------------------------------------------
+------------------------------- пїЅпїЅпїЅпїЅпїЅ ---------------------------------------------
 -----------------------------------------------------------------------------------
 
--- Фикс зеркального бага alt+tab(черный экран после разворота в инте)
+-- пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ alt+tab(пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ)
 writeMemory(0x555854, 4, -1869574000, true)
 writeMemory(0x555858, 1, 144, true)
 
--- функция быстрого прогруза игры. BY KEP4Ik
+-- пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ. BY KEP4Ik
 function patch()
 	if memory.getuint8(0x748C2B) == 0xE8 then
 		memory.fill(0x748C2B, 0x90, 5, true)
@@ -116,34 +117,34 @@ patch()
 ------------------------------- MAIN ----------------------------------------------
 -----------------------------------------------------------------------------------
 function main()
-	if not isSampfuncsLoaded() or not isSampLoaded() then -- Если SF или SA:MP не загружены
-    return -- Завершаем работу скрипта
+	if not isSampfuncsLoaded() or not isSampLoaded() then -- пїЅпїЅпїЅпїЅ SF пїЅпїЅпїЅ SA:MP пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    return -- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 end
-while not isSampAvailable() do -- Ждём пока функция isSampAvailable() вернет true
-    wait(0) -- Устанавливаем минимальное ожидание, что бы наша игра не зависла
-    -- значение 0 говорит что мы ждём следующий кадр (Frame)
+while not isSampAvailable() do -- пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ isSampAvailable() пїЅпїЅпїЅпїЅпїЅпїЅ true
+    wait(0) -- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    -- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 0 пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (Frame)
 end
-print("Начинаем подгрузку скрипта и его составляющих")
-sampAddChatMessage("[GeekHelper] {FFFFFF}Скрипт подгружен в игру, версия: {00C2BB}"..thisScript().version.."{ffffff}, начинаем инициализацию.", 0x046D63)
-print("Начинаем проверку обновлений.")
+print("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ")
+sampAddChatMessage("[GeekHelper] {FFFFFF}пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ: {00C2BB}"..thisScript().version.."{ffffff}, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.", 0x046D63)
+print("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.")
 updateCheck()
 imgui.Process = win_state['update'].v or win_state['main'].v
-while not isUpdateCheck do wait(0) end -- пока не проверит обновления тормозим работу
+while not isUpdateCheck do wait(0) end -- пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 sampRegisterChatCommand("gh", mainmenu)
 end
 
-function mainmenu() -- функция открытия основного меню скрипта
+function mainmenu() -- пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	win_state['main'].v = not win_state['main'].v
 end
 
-function load_settings() -- загрузка настроек
+function load_settings() -- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	-- CONFIG CREATE/LOAD
 	ini = inicfg.load(SET, getGameDirectory()..'\\moonloader\\config\\GeekHelper\\settings.ini')
 
 	-- LOAD CONFIG INFO
 	test = imgui.ImBool(ini.settings.test)
 end
-function saveSettings(args, key) -- функция сохранения настроек, args 1 = при отключении скрипта, 2 = при выходе из игры, 3 = сохранение клавиш + текст key, 4 = обычное сохранение.
+function saveSettings(args, key) -- пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, args 1 = пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, 2 = пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ, 3 = пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ + пїЅпїЅпїЅпїЅпїЅ key, 4 = пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
 
 	if aaudio ~= nil then
 		bass.BASS_StreamFree(aaudio)
@@ -170,7 +171,7 @@ function saveSettings(args, key) -- функция сохранения настроек, args 1 = при от
 	inicfg.save(SET, "/MoD-Helper/settings.ini")
 	if args == 1 then
 		print("============== SCRIPT WAS TERMINATED ==============")
-		print("Настройки и клавиши сохранены в связи.")
+		print("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ.")
 		print("GeekHelper, version: "..thisScript().version)
 
 		if doesFileExist(getWorkingDirectory() .. '\\GeekHelper\\files\\regst.data') then
@@ -189,7 +190,7 @@ function saveSettings(args, key) -- функция сохранения настроек, args 1 = при от
 	end
 end
 -----------------------------------------------------------------------------------
-function updateCheck() -- проверка обновлений
+function updateCheck() -- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	local zapros = https.request("https://geekhub.pro/samp/geekhelper/version.json")
 
 	if zapros ~= nil then
@@ -199,41 +200,41 @@ function updateCheck() -- проверка обновлений
 			updatever = info2.latest
 			version = tonumber(info2.latest_number)
 
-			print("[GeekHelper] Начинаем контроль версий")
+			print("[GeekHelper] пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ")
 
 			if version > tonumber(thisScript().version_num) then
-				print("[GeekHelper] Обнаружено обновление")
+				print("[GeekHelper] пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ")
 				if bNotf then
-					notf.addNotification(" Обнаружено обновление до версии "..updatever..".", 5, 2)
+					notf.addNotification(" пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ "..updatever..".", 5, 2)
 				end
-				sampAddChatMessage("[GeekHelper]{FFFFFF} Обнаружено обновление до версии "..updatever..".", 0x046D63)
+				sampAddChatMessage("[GeekHelper]{FFFFFF} пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ "..updatever..".", 0x046D63)
 				win_state['update'].v = true
 				isUpdateCheck = true
 			else
-				print("[GeekHelper] Новых обновлений нет, контроль версий пройден")
+				print("[GeekHelper] пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ")
 				if checkupd then
 					if bNotf then
-						notf.addNotification("У вас стоит актуальная версия скрипта: "..thisScript().version..".\nНеобходимости обновлять скрипт нет, приятного пользования.", 5, 2)
+						notf.addNotification("пїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: "..thisScript().version..".\nпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.", 5, 2)
 					end
-					sampAddChatMessage("[GeekHelper]{FFFFFF} У вас стоит актуальная версия скрипта: "..thisScript().version..".", 0x046D63)
-					sampAddChatMessage("[GeekHelper]{FFFFFF} Необходимости обновлять скрипт - нет, приятного пользования.", 0x046D63)
+					sampAddChatMessage("[GeekHelper]{FFFFFF} пїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: "..thisScript().version..".", 0x046D63)
+					sampAddChatMessage("[GeekHelper]{FFFFFF} пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.", 0x046D63)
 					checkupd = false
 				end
 				isUpdateCheck = true
 			end
 		else
-			sampAddChatMessage("[GeekHelper]{FFFFFF} Ошибка при получении информации об обновлении.", 0x046D63)
+			sampAddChatMessage("[GeekHelper]{FFFFFF} пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.", 0x046D63)
 			print("[GeekHelper] JSON file read error")
 			isUpdateCheck = true
 		end
 	else
-		sampAddChatMessage("[GeekHelper]{FFFFFF} Не удалось проверить наличие обновлений, попробуйте позже.", 0x046D63)
+		sampAddChatMessage("[GeekHelper]{FFFFFF} пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ.", 0x046D63)
 		isUpdateCheck = true
 	end
 end
 -------------------------------------------------IMGUI ZONE---------------------------------------
 
--- подключение шрифта для работы иконок
+-- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 local fa_font = nil
 local fa_glyph_ranges = imgui.ImGlyphRanges({ fa.min_range, fa.max_range })
 function imgui.BeforeDrawFrame()
@@ -246,7 +247,7 @@ function imgui.BeforeDrawFrame()
 end
 
 
-function async_http_request(method, url, args, resolve, reject) -- асинхронные запросы, опасная штука местами, ибо при определенном использовании игра может улететь в аут ;D
+function async_http_request(method, url, args, resolve, reject) -- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ ;D
 	local request_lane = lanes.gen('*', {package = {path = package.path, cpath = package.cpath}}, function()
 		local requests = require 'requests'
         local ok, result = pcall(requests.request, method, url, args)
@@ -277,49 +278,49 @@ function async_http_request(method, url, args, resolve, reject) -- асинхронные з
 end
 
 function imgui.OnDrawFrame()
-	local tLastKeys = {} -- это у нас для клавиш
-	local sw, sh = getScreenResolution() -- получаем разрешение экрана
-	local btn_size = imgui.ImVec2(-0.1, 0) -- а это "шаблоны" размеров кнопок
+	local tLastKeys = {} -- пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+	local sw, sh = getScreenResolution() -- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+	local btn_size = imgui.ImVec2(-0.1, 0) -- пїЅ пїЅпїЅпїЅ "пїЅпїЅпїЅпїЅпїЅпїЅпїЅ" пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	local btn_size2 = imgui.ImVec2(160, 0)
 	local btn_size3 = imgui.ImVec2(140, 0)
 
-	-- тут мы подстраиваем курсор под адекватность
+	-- пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	imgui.ShowCursor = win_state['update'].v
-	if win_state['main'].v then -- основное окошко
+	if win_state['main'].v then -- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 
 		imgui.SetNextWindowPos(imgui.ImVec2(sw / 2, sh / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(280, 250), imgui.Cond.FirstUseEver)
 		imgui.Begin(u8' GeekHelper', win_state['main'], imgui.WindowFlags.NoResize)
-		-- кнопка настроек, готово
-		if imgui.Button(fa.ICON_COGS..u8' Настройки', btn_size) then print("Переход в раздел настроек") win_state['settings'].v = not win_state['settings'].v end
+		-- пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ
+		if imgui.Button(fa.ICON_COGS..u8' пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ', btn_size) then print("пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ") win_state['settings'].v = not win_state['settings'].v end
 		imgui.End()
 	end
-	if win_state['settings'].v then -- окно настроек
+	if win_state['settings'].v then -- пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	end
-	if win_state['update'].v then -- окно обновления скрипта
+	if win_state['update'].v then -- пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
         imgui.SetNextWindowSize(imgui.ImVec2(450, 200), imgui.Cond.FirstUseEver)
-        imgui.Begin(u8('Обновление'), nil, imgui.WindowFlags.NoResize)
-		imgui.Text(u8'Обнаружено обновление до версии: '..updatever)
+        imgui.Begin(u8('пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ'), nil, imgui.WindowFlags.NoResize)
+		imgui.Text(u8'пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ: '..updatever)
 		imgui.Separator()
-		imgui.TextWrapped(u8("Для установки обновления необходимо подтверждение пользователя, разработчик настоятельно рекомендует принимать обновления ввиду того, что прошлые версии через определенное время отключаются и более не работают."))
-		if imgui.Button(u8'Скачать и установить обновление', btn_size) then
+		imgui.TextWrapped(u8("пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ."))
+		if imgui.Button(u8'пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ', btn_size) then
 			async_http_request('GET', 'https://geekhub.pro/samp/geekhelper/GeekHelper.lua', nil,
-				function(response) -- вызовется при успешном выполнении и получении ответа
+				function(response) -- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 				local f = assert(io.open(getWorkingDirectory() .. '/GeekHelper.lua', 'wb'))
 				f:write(response.text)
 				f:close()
-				sampAddChatMessage("[GeekHelper]{FFFFFF} Обновление успешно, перезагружаем скрипт.", 0x046D63)
+				sampAddChatMessage("[GeekHelper]{FFFFFF} пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ.", 0x046D63)
 				thisScript():reload()
 			end,
-			function(err) -- вызовется при ошибке, err - текст ошибки. эту функцию можно не указывать
+			function(err) -- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, err - пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 				print(err)
-				sampAddChatMessage("[GeekHelper]{FFFFFF} Произошла ошибка при обновлении, попробуйте позже.", 0x046D63)
+				sampAddChatMessage("[GeekHelper]{FFFFFF} пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ.", 0x046D63)
 				win_state['update'].v = not win_state['update'].v
 				return
 			end)
 		end
-		if imgui.Button(u8'Закрыть', btn_size) then win_state['update'].v = not win_state['update'].v end
+		if imgui.Button(u8'пїЅпїЅпїЅпїЅпїЅпїЅпїЅ', btn_size) then win_state['update'].v = not win_state['update'].v end
 		imgui.End()
 	end
 end

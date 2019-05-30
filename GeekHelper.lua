@@ -102,8 +102,7 @@ local Config = {
 			name = 'Androvira'
 		}
 	},
-	name = 'setting.ini'
-	path = '\\moonloader\\config\\GeekHelper\\'..name
+	path = '\\moonloader\\config\\GeekHelper\\setting.ini'
 }
 
 function Style(name)

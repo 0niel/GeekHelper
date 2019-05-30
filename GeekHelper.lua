@@ -55,7 +55,12 @@ assert(res, 'Library basexx not found')
 
 local res, fa = pcall(require, 'faIcons')
 assert(res, 'Library faIcons not found')
+
 local bNotf, notf = pcall(import, "imgui_notf.lua")
+
+local res, md5 = pcall(require, 'md5')
+assert(res, 'Library md5 not found')
+
 
 lfs = require('lfs')
 encoding = require 'encoding'
@@ -106,7 +111,7 @@ end
 function ini:load(path)
 	local fw
 	fw = io.open(path, 'r')
-	if not fw:read('*a') == nil then return nil end
+	if fw:read('*a') == nil then return nil end
 	new = {}
 	sec = ''
 	fw = io.open(path, 'r')
@@ -1017,8 +1022,27 @@ function imgui.BeforeDrawFrame()
 		local font_config = imgui.ImFontConfig() 
 		font_config.MergeMode = true
 
+		local check
+		check = io.open('moonloader/GeekHelper/files/fontawesome-webfont.ttf', 'r')
+		if check:read('*a') == nil then error('fontawesome-webfont.ttf not found') end
+		check = io.open('moonloader/GeekHelper/files/gtasa.otf', 'r')
+		if check:read('*a') == nil then error('gtasa.otf not found') end
+
 		fa_font = imgui.GetIO().Fonts:AddFontFromFileTTF('moonloader/GeekHelper/files/fontawesome-webfont.ttf', 14.0, font_config, fa_glyph_ranges)
-		menubar_font = imgui.GetIO().Fonts:AddFontFromFileTTF('moonloader/GeekHelper/files/gtasa.ttf', 28.0)
+		menubar_font = imgui.GetIO().Fonts:AddFontFromFileTTF('moonloader/GeekHelper/files/gtasa.otf', 28.0)
+		--imgui.Fonts:Build()
+		--imgui.ImFontAtlas:Build()
+
+		fa_font_file = io.open('moonloader/GeekHelper/files/fontawesome-webfont.ttf', 'r')
+		fa_font_file_read = fa_font_file:read('*a')
+		menubar_file = io.open('moonloader/GeekHelper/files/gtasa.otf', 'r')
+		menubar_file_read = menubar_file:read('*a')
+
+		fa_font_md5 = md5.sumhexa(tostring(fa_font_file_read))
+		menubar_font_md5 = md5.sumhexa(tostring(menubar_file_read))
+
+		if fa_font_md5 ~= '85f23caa7d317e546e22e79ac9bae2e1' then error('fontawesome-webfont.ttf not original('..fa_font_md5..')') end
+		if menubar_font_md5 ~= 'f19844f9bd08074ec6a5dfe398ba8bf7' then error('gtasa.otf not original ('..menubar_font_md5..')') end
 	end
 end
 
@@ -1098,28 +1122,28 @@ function imgui.OnDrawFrame()
 		imgui.SetNextWindowPos(imgui.ImVec2(sw / 2, sh / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(280, 250), imgui.Cond.FirstUseEver)
 
-		imgui.Begin(' GeekHelper', win_state['main'], imgui.WindowFlags.NoResize)
+		imgui.Begin(fa(0xf121)..u8' GeekHelper', win_state['main'], imgui.WindowFlags.NoResize)
 		
-		if imgui.Button(u8' Настройки', btn_size) then
+		if imgui.Button(fa(0xf085)..u8' Настройки', btn_size) then
 			win_state['settings'].v = not win_state['settings'].v
 		end
 
-		if imgui.Button(u8' Модификации', btn_size) then
+		if imgui.Button(fa(0xf0ad)..u8' Модификации', btn_size) then
 			win_state['mods'].v = not win_state['mods'].v
 		end
 
-		if imgui.Button(u8' О скрипте', btn_size) then
+		if imgui.Button(fa(0xf06a)..u8' О скрипте', btn_size) then
 			win_state['about'].v = not win_state['about'].v
 		end
 
-		if imgui.Button('Style', btn_size) then
+		if imgui.Button(fa(0xf043)..u8' Style', btn_size) then
 			win_state['style'].v = not win_state['style'].v
 		end
 
 		imgui.End()
 	end
 	if win_state['mods'].v then
-		imgui.Begin(u8'Модификации', win_state['mods'])
+		imgui.Begin(fa(0xf0ad)..u8' Модификации', win_state['mods'])
 
 		--imgui.AlignTextToFramePadding(); imgui.Text(u8(" Чат на клавишу Т")); imgui.SameLine(); imgui.Checkbox(u8'Чат на клавишу T', keyT)
 
@@ -1174,7 +1198,7 @@ function imgui.OnDrawFrame()
 		imgui.End()
 	end
 	if win_state['settings'].v then 
-		imgui.Begin(u8'Настройки', win_state['settings'])
+		imgui.Begin(fa(0xf085)..u8' Настройки', win_state['settings'])
 
 		imgui.Text('text')
 
@@ -1229,14 +1253,14 @@ function imgui.OnDrawFrame()
 		imgui.End()
 	end
 	if win_state['style'].v then
-		imgui.Begin('Style', win_state['style'])
+		imgui.Begin(fa(0xf043)..' Style', win_state['style'])
 		imgui.ShowStyleEditor()
 		imgui.End()
 	end
 	if win_state['about'].v then -- окно "о скрипте"
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(360, 225), imgui.Cond.FirstUseEver)
-		imgui.Begin(u8('О скрипте'), win_state['about'], imgui.WindowFlags.NoResize)
+		imgui.Begin(fa(0xf06a)..u8(' О скрипте'), win_state['about'], imgui.WindowFlags.NoResize)
 
 		imgui.Text(u8'GeekHelper - игровой помощник')
 		imgui.Text(u8'Разработчики: Oniel & CzarAlex')
@@ -1264,7 +1288,7 @@ function imgui.OnDrawFrame()
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(450, 200), imgui.Cond.FirstUseEver)
 
-		imgui.Begin(u8('Обновление'), nil, imgui.WindowFlags.NoResize)
+		imgui.Begin(fa(0xf0ed)..u8(' Обновление'), nil, imgui.WindowFlags.NoResize)
 
 		imgui.Text(u8'Обнаружено обновление до версии: '..updatever)
 		

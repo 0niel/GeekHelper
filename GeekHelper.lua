@@ -449,6 +449,8 @@ function imgui.OnDrawFrame()
 	local btn_size2 = imgui.ImVec2(160, 0)
 	local btn_size3 = imgui.ImVec2(140, 0)
 
+	-- тут мы подстраиваем курсор под адекватность
+	imgui.ShowCursor = win_state['main'].v or win_state['mods'].v or win_state['update'].v or win_state['about'].v or win_state['settings'].v or win_state['style'].v
 
 	imgui.PushStyleVar(imgui.StyleVar.FramePadding, imgui.ImVec2(500, 20))
 	imgui.PushFont(menubar_font)

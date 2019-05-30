@@ -168,7 +168,7 @@ function saveSettings(args, key) -- ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï
 	end
 
 	ini.settings.test = test.v
-	inicfg.save(SET, "/MoD-Helper/settings.ini")
+	inicfg.save(SET, "/GeekHelper/settings.ini")
 	if args == 1 then
 		print("============== SCRIPT WAS TERMINATED ==============")
 		print("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½.")

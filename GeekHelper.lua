@@ -84,7 +84,24 @@ win_state['about'] = imgui.ImBool(false)
 win_state['mp3_informer'] = imgui.ImBool(false)
 win_state['mp3'] = imgui.ImBool(false)
 
+ffi.cdef[[
+	short GetKeyState(int nVirtKey);
+	bool GetKeyboardLayoutNameA(char* pwszKLID);
+	int GetLocaleInfoA(int Locale, int LCType, char* lpLCData, int cchData);
 
+	void* __stdcall ShellExecuteA(void* hwnd, const char* op, const char* file, const char* params, const char* dir, int show_cmd);
+	uint32_t __stdcall CoInitializeEx(void*, uint32_t);
+
+);
+]]
+
+local BuffSize = 32
+local KeyboardLayoutName = ffi.new("char[?]", BuffSize)
+local LocalInfo = ffi.new("char[?]", BuffSize)
+local shell32 = ffi.load 'Shell32'
+local ole32 = ffi.load 'Ole32'
+
+chatInfo = imgui.ImBool(false)
 strobesOn = imgui.ImBool(false)
 cb1 = imgui.ImBool(false)
 cb2 = imgui.ImBool(false)
@@ -961,6 +978,9 @@ function main()
 	updateCheck()
 	while not isUpdateCheck do wait(0) end
 	imgui.Process = win_state['update'].v or win_state['main'].v or win_state['mp3_informer'].v
+
+	inputHelpText = renderCreateFont("Arial", 10, FCR_BORDER + FCR_BOLD) -- шрифт для chatinfo
+	lua_thread.create(showInputHelp)
 	------------------COMMANDS--------------
 	sampRegisterChatCommand("gh", mainmenu)
 	----------------------------------------
@@ -1122,6 +1142,40 @@ function anime()
 	imgui.End()
 	imgui.PopStyleColor()
 end
+function showInputHelp() -- chatinfo(для меня)
+	while true do
+		local chat = sampIsChatInputActive()
+		if chat == true then
+			local in1 = getStructElement(sampGetInputInfoPtr(), 0x8, 4)
+			local in2 = getStructElement(in1, 0x8, 4)
+			local in3 = getStructElement(in1, 0xC, 4)
+			fib = in3 + 48
+			fib2 = in2 + 10
+			local _, mmyID = sampGetPlayerIdByCharHandle(PLAYER_PED)
+			local nname = sampGetPlayerNickname(mmyID)
+			local score = sampGetPlayerScore(mmyID)
+			local color = sampGetPlayerColor(mmyID)
+			local capsState = ffi.C.GetKeyState(20)
+			local success = ffi.C.GetKeyboardLayoutNameA(KeyboardLayoutName)
+			local errorCode = ffi.C.GetLocaleInfoA(tonumber(ffi.string(KeyboardLayoutName), 16), 0x00000002, LocalInfo, BuffSize)
+			local localName = ffi.string(LocalInfo)
+
+			local text = string.format(
+				"%s :: {%0.6x}%s[%d] {ffffff}:: Капс: %s {FFFFFF}:: Язык: {ffeeaa}%s{ffffff}",
+				os.date("%H:%M:%S"), bit.band(color,0xffffff), nname, mmyID, getStrByState(capsState), string.match(localName, "([^%(]*)")
+			)
+
+			if chatInfo.v and sampIsLocalPlayerSpawned() and nname ~= nil then renderFontDrawText(inputHelpText, text, fib2, fib, 0xD7FFFFFF) end
+			end
+		wait(0)
+	end
+end
+function getStrByState(keyState) -- состояние клавиш для chatinfo
+	if keyState == 0 then
+		return "{ffeeaa}Выкл{ffffff}"
+	end
+	return "{9EC73D}Вкл{ffffff}"
+end
 
 function imgui.OnDrawFrame()
 	local tLastKeys = {}
@@ -1198,7 +1252,7 @@ function imgui.OnDrawFrame()
 		imgui.Begin(fa(0xf0ad)..u8' Модификации', win_state['mods'])
 
 		imgui.Checkbox(u8'Стробоскопы', strobesOn)
-
+		imgui.Checkbox(u8'ChatInfo', chatInfo)
 		imgui.End()
 	end
 	if win_state['settings'].v then

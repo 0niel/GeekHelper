@@ -66,7 +66,11 @@ lfs = require('lfs')
 encoding = require 'encoding'
 encoding.default = 'CP1251'
 u8 = encoding.UTF8
-
+local as_action = require('moonloader').audiostream_state
+local volume = imgui.ImFloat('50')
+local antiafkmode = imgui.ImBool(false)
+local selected = 1
+local searchBuf = imgui.ImBuffer(256)
 
 
 local win_state = {}
@@ -77,7 +81,7 @@ win_state['settings'] = imgui.ImBool(false)
 win_state['mods'] = imgui.ImBool(false)
 win_state['style'] = imgui.ImBool(false)
 win_state['about'] = imgui.ImBool(false)
-
+win_state['mp3_informer'] = imgui.ImBool(false)
 
 
 cb1 = imgui.ImBool(false)
@@ -179,10 +183,13 @@ local Config = {
 
 function Config:Save()
 	ini:save(Config.ini, getGameDirectory()..Config.path, Config.name)
-	if bNotf then notf.addNotification('Config successfully saved.', 4, 2) end
+	if bNotf then notf.addNotification('Конфиг успешно сохранен.', 4, 2) end
 end
 
 function Config:Load()
+	if not doesFileExist(getGameDirectory()..Config.path..Config.name) then
+		inicfg.save(Config.ini, 'GeekHelper\\settings.ini')
+	end
 	local tmpn = ini:load(getGameDirectory()..Config.path..Config.name)
 	if tmpn ~= nil then
 		for sec, tbl in pairs(tmpn) do
@@ -193,7 +200,7 @@ function Config:Load()
 		if bNotf then notf.addNotification('Config not loaded.', 4, 3) end
 	end
 	Style(Config.ini.style.name)
-	if bNotf then notf.addNotification('Config successfully loaded.', 4, 2) end
+	if bNotf then notf.addNotification('Конфиг успешно загружен.', 4, 2) end
 end
 
 function Style(name)
@@ -540,7 +547,7 @@ function Style(name)
 		imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered] = imgui.ImVec4(1.00, 0.60, 0.00, 1.00)
 		imgui.GetStyle().Colors[imgui.Col.TextSelectedBg]       = imgui.ImVec4(0.00, 0.00, 1.00, 0.35)
 		imgui.GetStyle().Colors[imgui.Col.ModalWindowDarkening] = imgui.ImVec4(0.20, 0.20, 0.20, 0.35)
-	
+
 	elseif name == 'Deault' then
 		imgui.GetStyle().Colors[imgui.Col.Text]                 = imgui.ImVec4(0.00, 0.00, 0.00, 1.00)
 		imgui.GetStyle().Colors[imgui.Col.TextDisabled]         = imgui.ImVec4(0.60, 0.60, 0.60, 1.00)
@@ -717,48 +724,48 @@ function Style(name)
 		imgui.GetStyle().Colors[imgui.Col.ModalWindowDarkening] = imgui.ImVec4(0.20, 0.20, 0.20, 0.35)
 
 	elseif name == 'Blue' then
-		imgui.GetStyle().Colors[imgui.Col.Text]                 = imgui.ImVec4(0.86, 0.93, 0.89, 0.78) 
-		imgui.GetStyle().Colors[imgui.Col.TextDisabled]         = imgui.ImVec4(0.13, 0.65, 0.92, 0.78) 
-		imgui.GetStyle().Colors[imgui.Col.WindowBg]             = imgui.ImVec4(0.13, 0.14, 0.17, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.ChildWindowBg]        = imgui.ImVec4(0.20, 0.22, 0.27, 0.58) 
-		imgui.GetStyle().Colors[imgui.Col.PopupBg]              = imgui.ImVec4(0.20, 0.22, 0.27, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.Border]               = imgui.ImVec4(0.00, 0.00, 0.00, 0.35) 
-		imgui.GetStyle().Colors[imgui.Col.BorderShadow]         = imgui.ImVec4(0.00, 0.00, 0.00, 0.00) 
-		imgui.GetStyle().Colors[imgui.Col.FrameBg]              = imgui.ImVec4(0.20, 0.22, 0.27, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.FrameBgHovered]       = imgui.ImVec4(0.13, 0.65, 0.92, 0.78) 
-		imgui.GetStyle().Colors[imgui.Col.FrameBgActive]        = imgui.ImVec4(0.13, 0.65, 0.92, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.TitleBg]              = imgui.ImVec4(0.20, 0.22, 0.27, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.TitleBgCollapsed]     = imgui.ImVec4(0.20, 0.22, 0.27, 0.75) 
-		imgui.GetStyle().Colors[imgui.Col.TitleBgActive]        = imgui.ImVec4(0.13, 0.65, 0.92, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.MenuBarBg]            = imgui.ImVec4(0.20, 0.22, 0.27, 0.47) 
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarBg]          = imgui.ImVec4(0.20, 0.22, 0.27, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrab]        = imgui.ImVec4(0.09, 0.15, 0.16, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabHovered] = imgui.ImVec4(0.13, 0.65, 0.92, 0.78) 
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabActive]  = imgui.ImVec4(0.13, 0.65, 0.92, 1.00) 
+		imgui.GetStyle().Colors[imgui.Col.Text]                 = imgui.ImVec4(0.86, 0.93, 0.89, 0.78)
+		imgui.GetStyle().Colors[imgui.Col.TextDisabled]         = imgui.ImVec4(0.13, 0.65, 0.92, 0.78)
+		imgui.GetStyle().Colors[imgui.Col.WindowBg]             = imgui.ImVec4(0.13, 0.14, 0.17, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.ChildWindowBg]        = imgui.ImVec4(0.20, 0.22, 0.27, 0.58)
+		imgui.GetStyle().Colors[imgui.Col.PopupBg]              = imgui.ImVec4(0.20, 0.22, 0.27, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.Border]               = imgui.ImVec4(0.00, 0.00, 0.00, 0.35)
+		imgui.GetStyle().Colors[imgui.Col.BorderShadow]         = imgui.ImVec4(0.00, 0.00, 0.00, 0.00)
+		imgui.GetStyle().Colors[imgui.Col.FrameBg]              = imgui.ImVec4(0.20, 0.22, 0.27, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.FrameBgHovered]       = imgui.ImVec4(0.13, 0.65, 0.92, 0.78)
+		imgui.GetStyle().Colors[imgui.Col.FrameBgActive]        = imgui.ImVec4(0.13, 0.65, 0.92, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.TitleBg]              = imgui.ImVec4(0.20, 0.22, 0.27, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.TitleBgCollapsed]     = imgui.ImVec4(0.20, 0.22, 0.27, 0.75)
+		imgui.GetStyle().Colors[imgui.Col.TitleBgActive]        = imgui.ImVec4(0.13, 0.65, 0.92, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.MenuBarBg]            = imgui.ImVec4(0.20, 0.22, 0.27, 0.47)
+		imgui.GetStyle().Colors[imgui.Col.ScrollbarBg]          = imgui.ImVec4(0.20, 0.22, 0.27, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrab]        = imgui.ImVec4(0.09, 0.15, 0.16, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabHovered] = imgui.ImVec4(0.13, 0.65, 0.92, 0.78)
+		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabActive]  = imgui.ImVec4(0.13, 0.65, 0.92, 1.00)
 		imgui.GetStyle().Colors[imgui.Col.CheckMark]            = imgui.ImVec4(0.13, 0.65, 0.92, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.SliderGrab]           = imgui.ImVec4(0.13, 0.65, 0.92, 0.37) 
-		imgui.GetStyle().Colors[imgui.Col.SliderGrabActive]     = imgui.ImVec4(0.13, 0.65, 0.92, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.Button]               = imgui.ImVec4(0.13, 0.65, 0.92, 0.75) 
-		imgui.GetStyle().Colors[imgui.Col.ButtonHovered]        = imgui.ImVec4(0.13, 0.65, 0.92, 0.86) 
-		imgui.GetStyle().Colors[imgui.Col.ButtonActive]         = imgui.ImVec4(0.13, 0.65, 0.92, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.Header]               = imgui.ImVec4(0.13, 0.65, 0.92, 0.76) 
+		imgui.GetStyle().Colors[imgui.Col.SliderGrab]           = imgui.ImVec4(0.13, 0.65, 0.92, 0.37)
+		imgui.GetStyle().Colors[imgui.Col.SliderGrabActive]     = imgui.ImVec4(0.13, 0.65, 0.92, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.Button]               = imgui.ImVec4(0.13, 0.65, 0.92, 0.75)
+		imgui.GetStyle().Colors[imgui.Col.ButtonHovered]        = imgui.ImVec4(0.13, 0.65, 0.92, 0.86)
+		imgui.GetStyle().Colors[imgui.Col.ButtonActive]         = imgui.ImVec4(0.13, 0.65, 0.92, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.Header]               = imgui.ImVec4(0.13, 0.65, 0.92, 0.76)
 		imgui.GetStyle().Colors[imgui.Col.HeaderHovered]        = imgui.ImVec4(0.13, 0.65, 0.92, 0.86)
-		imgui.GetStyle().Colors[imgui.Col.HeaderActive]         = imgui.ImVec4(0.13, 0.65, 0.92, 1.00) 
-		--imgui.GetStyle().Colors[imgui.Col.Column]               = imgui.ImVec4(0.15, 0.00, 0.00, 0.35) 
+		imgui.GetStyle().Colors[imgui.Col.HeaderActive]         = imgui.ImVec4(0.13, 0.65, 0.92, 1.00)
+		--imgui.GetStyle().Colors[imgui.Col.Column]               = imgui.ImVec4(0.15, 0.00, 0.00, 0.35)
 		--imgui.GetStyle().Colors[imgui.Col.ColumnHovered]        = imgui.ImVec4(0.13, 0.65, 0.92, 0.59)
-		--imgui.GetStyle().Colors[imgui.Col.ColumnActive]         = imgui.ImVec4(0.13, 0.65, 0.92, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.ResizeGrip]           = imgui.ImVec4(0.13, 0.65, 0.92, 0.63) 
-		imgui.GetStyle().Colors[imgui.Col.ResizeGripHovered]    = imgui.ImVec4(0.13, 0.65, 0.92, 0.78) 
-		imgui.GetStyle().Colors[imgui.Col.ResizeGripActive]     = imgui.ImVec4(0.13, 0.65, 0.92, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.CloseButton]          = imgui.ImVec4(1.00, 1.00, 1.00, 0.51) 
-		imgui.GetStyle().Colors[imgui.Col.CloseButtonHovered]   = imgui.ImVec4(1.00, 1.00, 1.00, 0.67) 
-		imgui.GetStyle().Colors[imgui.Col.CloseButtonActive]    = imgui.ImVec4(1.00, 1.00, 1.00, 0.78) 
+		--imgui.GetStyle().Colors[imgui.Col.ColumnActive]         = imgui.ImVec4(0.13, 0.65, 0.92, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.ResizeGrip]           = imgui.ImVec4(0.13, 0.65, 0.92, 0.63)
+		imgui.GetStyle().Colors[imgui.Col.ResizeGripHovered]    = imgui.ImVec4(0.13, 0.65, 0.92, 0.78)
+		imgui.GetStyle().Colors[imgui.Col.ResizeGripActive]     = imgui.ImVec4(0.13, 0.65, 0.92, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.CloseButton]          = imgui.ImVec4(1.00, 1.00, 1.00, 0.51)
+		imgui.GetStyle().Colors[imgui.Col.CloseButtonHovered]   = imgui.ImVec4(1.00, 1.00, 1.00, 0.67)
+		imgui.GetStyle().Colors[imgui.Col.CloseButtonActive]    = imgui.ImVec4(1.00, 1.00, 1.00, 0.78)
 		imgui.GetStyle().Colors[imgui.Col.PlotLines]            = imgui.ImVec4(0.86, 0.93, 0.89, 0.63)
-		imgui.GetStyle().Colors[imgui.Col.PlotLinesHovered]     = imgui.ImVec4(0.13, 0.65, 0.92, 1.00) 
+		imgui.GetStyle().Colors[imgui.Col.PlotLinesHovered]     = imgui.ImVec4(0.13, 0.65, 0.92, 1.00)
 		imgui.GetStyle().Colors[imgui.Col.PlotHistogram]        = imgui.ImVec4(0.86, 0.93, 0.89, 0.63)
-		imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered] = imgui.ImVec4(0.13, 0.65, 0.92, 1.00) 
-		imgui.GetStyle().Colors[imgui.Col.TextSelectedBg]       = imgui.ImVec4(0.13, 0.65, 0.92, 0.43) 
-		imgui.GetStyle().Colors[imgui.Col.ModalWindowDarkening] = imgui.ImVec4(0.20, 0.22, 0.27, 0.73) 
+		imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered] = imgui.ImVec4(0.13, 0.65, 0.92, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.TextSelectedBg]       = imgui.ImVec4(0.13, 0.65, 0.92, 0.43)
+		imgui.GetStyle().Colors[imgui.Col.ModalWindowDarkening] = imgui.ImVec4(0.20, 0.22, 0.27, 0.73)
 
 	elseif name == 'Midnight' then
 		imgui.GetStyle().Colors[imgui.Col.Text]                 = imgui.ImVec4(0.00, 0.00, 0.00, 1.00)
@@ -858,50 +865,50 @@ function Style(name)
 end
 
 
---[ImGuiCol_Text] = The color for the text that will be used for the whole menu. 
---[ImGuiCol_TextDisabled] = Color for "not active / disabled text". 
---[ImGuiCol_WindowBg] = Background color. 
---[ImGuiCol_PopupBg] = The color used for the background in ImGui :: Combo and ImGui :: MenuBar. 
---[ImGuiCol_Border] = The color that is used to outline your menu. 
---[ImGuiCol_BorderShadow] = Color for the stroke shadow. 
+--[ImGuiCol_Text] = The color for the text that will be used for the whole menu.
+--[ImGuiCol_TextDisabled] = Color for "not active / disabled text".
+--[ImGuiCol_WindowBg] = Background color.
+--[ImGuiCol_PopupBg] = The color used for the background in ImGui :: Combo and ImGui :: MenuBar.
+--[ImGuiCol_Border] = The color that is used to outline your menu.
+--[ImGuiCol_BorderShadow] = Color for the stroke shadow.
 --[ImGuiCol_FrameBg] = Color for ImGui :: InputText and for background ImGui :: Checkbox
---[ImGuiCol_FrameBgHovered] = The color that is used in almost the same way as the one above, except that it changes color when guiding it to ImGui :: Checkbox. 
---[ImGuiCol_FrameBgActive] = Active color. 
---[ImGuiCol_TitleBg] = The color for changing the main place at the very top of the menu (where the name of your "top-of-the-table" is shown. 
---ImGuiCol_TitleBgCollapsed = ImguiCol_TitleBgActive 
---= The color of the active title window, ie if you have a menu with several windows , this color will be used for the window in which you will be at the moment. 
+--[ImGuiCol_FrameBgHovered] = The color that is used in almost the same way as the one above, except that it changes color when guiding it to ImGui :: Checkbox.
+--[ImGuiCol_FrameBgActive] = Active color.
+--[ImGuiCol_TitleBg] = The color for changing the main place at the very top of the menu (where the name of your "top-of-the-table" is shown.
+--ImGuiCol_TitleBgCollapsed = ImguiCol_TitleBgActive
+--= The color of the active title window, ie if you have a menu with several windows , this color will be used for the window in which you will be at the moment.
 --[ImGuiCol_MenuBarBg] = The color for the bar menu. (Not all sawes saw this, but still)
---[ImGuiCol_ScrollbarBg] = The color for the background of the "strip", through which you can "flip" functions in the software vertically. 
---[ImGuiCol_ScrollbarGrab] = Color for the scoll bar, ie for the "strip", which is used to move the menu vertically. 
---[ImGuiCol_ScrollbarGrabHovered] = Color for the "minimized / unused" scroll bar. 
---[ImGuiCol_ScrollbarGrabActive] = The color for the "active" activity in the window where the scroll bar is located. 
---[ImGuiCol_ComboBg] = Color for the background for ImGui :: Combo. 
---[ImGuiCol_CheckMark] = Color for your ImGui :: Checkbox. 
---[ImGuiCol_SliderGrab] = Color for the slider ImGui :: SliderInt and ImGui :: SliderFloat. 
+--[ImGuiCol_ScrollbarBg] = The color for the background of the "strip", through which you can "flip" functions in the software vertically.
+--[ImGuiCol_ScrollbarGrab] = Color for the scoll bar, ie for the "strip", which is used to move the menu vertically.
+--[ImGuiCol_ScrollbarGrabHovered] = Color for the "minimized / unused" scroll bar.
+--[ImGuiCol_ScrollbarGrabActive] = The color for the "active" activity in the window where the scroll bar is located.
+--[ImGuiCol_ComboBg] = Color for the background for ImGui :: Combo.
+--[ImGuiCol_CheckMark] = Color for your ImGui :: Checkbox.
+--[ImGuiCol_SliderGrab] = Color for the slider ImGui :: SliderInt and ImGui :: SliderFloat.
 --[ImGuiCol_SliderGrabActive] = Color of the slider,
---[ImGuiCol_Button] = the color for the button. 
---[ImGuiCol_ButtonHovered] = Color when hovering over the button. 
---[ImGuiCol_ButtonActive] = Button color used. 
---[ImGuiCol_Header] = Color for ImGui :: CollapsingHeader. 
---[ImGuiCol_HeaderHovered] = Color, when hovering over ImGui :: CollapsingHeader. 
---[ImGuiCol_HeaderActive] = Used color ImGui :: CollapsingHeader. 
---[ImGuiCol_Column] = Color for the "separation strip" ImGui :: Column and ImGui :: NextColumn. 
---[ImGuiCol_ColumnHovered] = Color, when hovering on the "strip strip" ImGui :: Column and ImGui :: NextColumn. 
+--[ImGuiCol_Button] = the color for the button.
+--[ImGuiCol_ButtonHovered] = Color when hovering over the button.
+--[ImGuiCol_ButtonActive] = Button color used.
+--[ImGuiCol_Header] = Color for ImGui :: CollapsingHeader.
+--[ImGuiCol_HeaderHovered] = Color, when hovering over ImGui :: CollapsingHeader.
+--[ImGuiCol_HeaderActive] = Used color ImGui :: CollapsingHeader.
+--[ImGuiCol_Column] = Color for the "separation strip" ImGui :: Column and ImGui :: NextColumn.
+--[ImGuiCol_ColumnHovered] = Color, when hovering on the "strip strip" ImGui :: Column and ImGui :: NextColumn.
 --[ImGuiCol_ColumnActive] = The color used for the "separation strip" ImGui :: Column and ImGui :: NextColumn.
---[ImGuiCol_ResizeGrip] = The color for the "triangle" in the lower right corner, which is used to increase or decrease the size of the menu. 
---[ImGuiCol_ResizeGripHovered] = Color, when hovering to the "triangle" in the lower right corner, which is used to increase or decrease the size of the menu. 
---[ImGuiCol_ResizeGripActive] = The color used for the "triangle" in the lower right corner, which is used to increase or decrease the size of the menu. 
---[ImGuiCol_CloseButton] = The color for the button-closing menu. 
---[ImGuiCol_CloseButtonHovered] = Color, when you hover over the button-close menu. 
+--[ImGuiCol_ResizeGrip] = The color for the "triangle" in the lower right corner, which is used to increase or decrease the size of the menu.
+--[ImGuiCol_ResizeGripHovered] = Color, when hovering to the "triangle" in the lower right corner, which is used to increase or decrease the size of the menu.
+--[ImGuiCol_ResizeGripActive] = The color used for the "triangle" in the lower right corner, which is used to increase or decrease the size of the menu.
+--[ImGuiCol_CloseButton] = The color for the button-closing menu.
+--[ImGuiCol_CloseButtonHovered] = Color, when you hover over the button-close menu.
 --[ImGuiCol_CloseButtonActive] = The color used for the button-closing menu.
---[ImGuiCol_TextSelectedBg] = The color of the selected text, in ImGui :: MenuBar. 
---[ImGuiCol_ModalWindowDarkening] = The color of the "Blackout Window" of your menu. 
---I rarely see these designations, but still decided to put them here. 
---[ImGuiCol_Tab] = The color for tabs in the menu. 
+--[ImGuiCol_TextSelectedBg] = The color of the selected text, in ImGui :: MenuBar.
+--[ImGuiCol_ModalWindowDarkening] = The color of the "Blackout Window" of your menu.
+--I rarely see these designations, but still decided to put them here.
+--[ImGuiCol_Tab] = The color for tabs in the menu.
 --[ImGuiCol_TabActive] = The active color of tabs, ie when you click on the tab you will have this color.
---[ImGuiCol_TabHovered] = The color that will be displayed when hovering on the table. 
---[ImGuiCol_TabSelected] = The color that is used when you are in one of the tabs. 
---[ImGuiCol_TabText] = Text color that only applies to tabs. 
+--[ImGuiCol_TabHovered] = The color that will be displayed when hovering on the table.
+--[ImGuiCol_TabSelected] = The color that is used when you are in one of the tabs.
+--[ImGuiCol_TabText] = Text color that only applies to tabs.
 --[ImGuiCol_TabTextActive] = Active text color for tabs.
 
 writeMemory(0x555854, 4, -1869574000, true)
@@ -943,11 +950,21 @@ function main()
 	print("Начинаем проверку обновлений.")
 	updateCheck()
 	while not isUpdateCheck do wait(0) end
-	imgui.Process = win_state['update'].v or win_state['main'].v
+	imgui.Process = win_state['update'].v or win_state['main'].v or win_state['mp3_informer'].v
+	------------------COMMANDS--------------
 	sampRegisterChatCommand("gh", mainmenu)
+	----------------------------------------
+	------------------------------------------------------------ используем bass.lua
+	aaudio = bass.BASS_StreamCreateFile(false, "moonloader/GeekHelper/audio/ad.wav", 0, 0, 0) -- уведомление при включении скрипта
+	bass.BASS_ChannelSetAttribute(aaudio, BASS_ATTRIB_VOL, 0.1)
+	bass.BASS_ChannelPlay(aaudio, false)
+
+	aerr = bass.BASS_StreamCreateFile(false, "moonloader/GeekHelper/audio/crash.mp3", 0, 0, 0) -- краш звук
+	bass.BASS_ChannelSetAttribute(aerr, BASS_ATTRIB_VOL, 3.0)
+	------------------------------------------------------------
 	Config:Load()
 	while true do
-		imgui.Process = win_state['main'].v
+		imgui.Process = win_state['main'].v or win_state['mp3_informer'].v
 		wait(0)
 	end
 end
@@ -956,8 +973,23 @@ function mainmenu()
 	win_state['main'].v = not win_state['main'].v
 end
 
+function getMusicList()
+	local files = {}
+	local handleFile, nameFile = findFirstFile('moonloader/GeekHelper/audio/MP3/*.mp3')
+	while nameFile do
+		if handleFile then
+			if not nameFile then
+				findClose(handleFile)
+			else
+				files[#files+1] = nameFile
+				nameFile = findNextFile(handleFile)
+			end
+		end
+	end
+	return files
+end
 
-function updateCheck() 
+function updateCheck()
 	local zapros = https.request("https://geekhub.pro/samp/geekhelper/version.json")
 
 	if zapros ~= nil then
@@ -1007,7 +1039,7 @@ local menubar_font = nil
 local fa_glyph_ranges = imgui.ImGlyphRanges({ fa.min_range, fa.max_range })
 function imgui.BeforeDrawFrame()
 	if fa_font == nil then
-		local font_config = imgui.ImFontConfig() 
+		local font_config = imgui.ImFontConfig()
 		font_config.MergeMode = true
 
 		local check
@@ -1035,15 +1067,15 @@ function imgui.BeforeDrawFrame()
 end
 
 
-function async_http_request(method, url, args, resolve, reject) 
+function async_http_request(method, url, args, resolve, reject)
 	local request_lane = lanes.gen('*', {package = {path = package.path, cpath = package.cpath}}, function()
 		local requests = require 'requests'
 		local ok, result = pcall(requests.request, method, url, args)
 		if ok then
-			result.json, result.xml = nil, nil 
+			result.json, result.xml = nil, nil
 			return true, result
 		else
-			return false, result 
+			return false, result
 		end
 	end)
 	if not reject then reject = function() end end
@@ -1074,19 +1106,19 @@ function anime()
 	imgui.Begin('', win_state['image'], imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoMove + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoScrollWithMouse + imgui.WindowFlags.NoCollapse + imgui.WindowFlags.AlwaysAutoResize)
 
 	imgui.Image(img, imgui.ImVec2(aw, ah))
-	
+
 	imgui.End()
 	imgui.PopStyleColor()
 end
 
 function imgui.OnDrawFrame()
-	local tLastKeys = {} 
-	local sw, sh = getScreenResolution() 
-	local btn_size = imgui.ImVec2(-0.1, 0) 
+	local tLastKeys = {}
+	local sw, sh = getScreenResolution()
+	local btn_size = imgui.ImVec2(-0.1, 0)
 	local btn_size2 = imgui.ImVec2(160, 0)
 	local btn_size3 = imgui.ImVec2(140, 0)
-
-	imgui.ShowCursor = imgui.Process
+  imgui.ShowCursor = win_state['main'].v or win_state['update'].v or win_state['settings'].v or win_state['mods'].v or win_state['style'].v or win_state['about'].v
+	--imgui.ShowCursor = imgui.Process
 	imgui.PushStyleVar(imgui.StyleVar.FramePadding, imgui.ImVec2(500, 20))
 	imgui.PushFont(menubar_font)
 	if imgui.BeginMainMenuBar() then
@@ -1118,18 +1150,15 @@ function imgui.OnDrawFrame()
 	imgui.PopFont()
 	imgui.PopStyleVar()
 
-	--imgui.Image(getGameDirectory()..'\\moonloader\\GeekHelper\\files\\anime.png', imgui.ImVec2(589, 782))
-
-	--imgui.ShowCursor = win_state['update'].v
 
 	lua_thread.create(anime)
 
-	if win_state['main'].v then 
+	if win_state['main'].v then
 		imgui.SetNextWindowPos(imgui.ImVec2(sw / 2, sh / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(280, 250), imgui.Cond.FirstUseEver)
 
 		imgui.Begin(fa(0xf121)..u8' GeekHelper', win_state['main'], imgui.WindowFlags.NoResize)
-		
+
 		if imgui.Button(fa(0xf085)..u8' Настройки', btn_size) then
 			win_state['settings'].v = not win_state['settings'].v
 		end
@@ -1145,10 +1174,15 @@ function imgui.OnDrawFrame()
 		if imgui.Button(fa(0xf043)..u8' Style', btn_size) then
 			win_state['style'].v = not win_state['style'].v
 		end
+		if imgui.Button(fa.ICON_PLAY..u8' MP3 Player', btn_size) then
+			win_state['mp3'].v = not win_state['mp3'].v
+		end
 
 		imgui.End()
 	end
 	if win_state['mods'].v then
+		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(600, 900), imgui.Cond.FirstUseEver)
 		imgui.Begin(fa(0xf0ad)..u8' Модификации', win_state['mods'])
 
 		--imgui.AlignTextToFramePadding(); imgui.Text(u8(" Чат на клавишу Т")); imgui.SameLine(); imgui.Checkbox(u8'Чат на клавишу T', keyT)
@@ -1220,7 +1254,9 @@ function imgui.OnDrawFrame()
 
 		imgui.End()
 	end
-	if win_state['settings'].v then 
+	if win_state['settings'].v then
+		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(600, 900), imgui.Cond.FirstUseEver)
 		imgui.Begin(fa(0xf085)..u8' Настройки', win_state['settings'])
 
 		imgui.Text('text')
@@ -1247,12 +1283,12 @@ function imgui.OnDrawFrame()
 
 		imgui.RadioButton('radio1', rb, 0)
 		imgui.RadioButton('radio2', rb, 1)
-		
+
 		imgui.Combo('combo', c, {'item1', 'item2', 'item3'}, 3)
 
 		imgui.InputText('inputtext', it)
 		imgui.Text('text: '..it.v)
-		
+
 		imgui.DragFloat('dragfloat', df, imgui.ImFloat(0.001), 0, 100, '%.3f', imgui.ImFloat(0.001))
 
 		imgui.SliderFloat('sliderfloat', sf, 0, 100, '%.3f', imgui.ImFloat(0.001))
@@ -1268,7 +1304,7 @@ function imgui.OnDrawFrame()
 		imgui.NextColumn()
 		imgui.Text('nextcolumn: ')
 		imgui.ColorEdit4('coloredit4', f4)
-		
+
 		imgui.NextColumn()
 		imgui.Text('button pressed: '..tostring(pres))
 		imgui.ColorPicker4('colorpicker4', f4)
@@ -1307,28 +1343,128 @@ function imgui.OnDrawFrame()
 		end
 		imgui.End()
 	end
-	if win_state['update'].v then 
+
+	if win_state['mp3'].v then -- окно "mp3 player"
+		local musiclist = getMusicList()
+		local sw, sh = getScreenResolution()
+		imgui.SetNextWindowPos(imgui.ImVec2(sw / 2, sh / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(810, 310), imgui.Cond.FirstUseEver)
+		imgui.Begin(u8'MP3 Player', win_state['mp3'], imgui.WindowFlags.NoResize)
+
+
+		if imgui.Button(u8'Музыка оффлайн') then selected2 = 1 end
+		imgui.SameLine()
+		if imgui.Button(u8'Музыка онлайн') then selected2 = 2 end
+		imgui.Separator()
+
+		if selected2 == 1 then
+			imgui.BeginChild('##left', imgui.ImVec2(350, 0), true)
+			for num, name in pairs(musiclist) do
+				local name = name:gsub('.mp3', '')
+				if imgui.Selectable(u8(name), false) then selected = num end
+			end
+			imgui.EndChild()
+			imgui.SameLine()
+			imgui.BeginChild('##right', imgui.ImVec2(0, 0), true)
+			imgui.SameLine()
+			for num, name in pairs(musiclist) do
+				if num == selected then
+					local namech = name:gsub('.mp3', '')
+					imgui.Text(u8(namech))
+					imgui.Spacing()
+					imgui.Separator()
+					imgui.Spacing()
+					imgui.SameLine(160)
+					if imgui.Button(u8'Включить') then
+						if playsound ~= nil then setAudioStreamState(playsound, as_action.STOP) playsound = nil end
+						playsound = loadAudioStream('moonloader/GeekHelper/audio/MP3/'..name)
+						setAudioStreamState(playsound, as_action.PLAY)
+						setAudioStreamVolume(playsound, math.floor(volume.v))
+						informer_song = name
+						win_state['mp3_informer'].v = true
+					end
+					imgui.Spacing()
+					imgui.Separator()
+					imgui.Text(' ')
+					imgui.SameLine(50)
+					imgui.SliderFloat(u8'Громкость', volume, 0, 100)
+					if playsound ~= nil then setAudioStreamVolume(playsound, math.floor(volume.v)) end
+					imgui.Spacing()
+					imgui.SameLine(160)
+					if imgui.Button(fa.ICON_PAUSE, imgui.ImVec2(30, 30)) then if playsound ~= nil then setAudioStreamState(playsound, as_action.PAUSE) end end
+					imgui.SameLine(nil, 3)
+					if imgui.Button(fa.ICON_PLAY, imgui.ImVec2(30, 30)) then if playsound ~= nil then setAudioStreamState(playsound, as_action.RESUME) end end
+
+
+				end
+			end
+			imgui.EndChild()
+		else
+			for i = 0, 3 do imgui.Text(' ') end
+			imgui.SameLine(142)
+			imgui.SliderFloat(u8'Громкость', volume, 0, 100)
+			imgui.Spacing()
+			imgui.SameLine(142)
+			imgui.InputText(u8"Введите ссылку.", searchBuf, imgui.InputTextFlags.EnterReturnsTrue + imgui.InputTextFlags.CharsNoBlank)
+			imgui.Spacing()
+			imgui.SameLine(337)
+			if imgui.Button(u8'Запустить по ссылке') then
+				if searchBuf.v ~= '' and string.lower(searchBuf.v):find('http') then
+					if onlinesong ~= nil then setAudioStreamState(onlinesong, as_action.STOP) end
+					onlinesong = loadAudioStream(searchBuf.v)
+					setAudioStreamState(onlinesong, as_action.PLAY)
+					setAudioStreamVolume(onlinesong, math.floor(volume.v))
+					informer_song = searchBuf.v
+					win_state['mp3_informer'].v = true
+				end
+			end
+			imgui.Spacing()
+			imgui.SameLine(338)
+			if imgui.Button(fa.ICON_PAUSE,imgui.ImVec2(62, 50)) then if onlinesong ~= nil then setAudioStreamState(onlinesong, as_action.PAUSE) end end
+			imgui.SameLine(nil, 3)
+			if imgui.Button(fa.ICON_PLAY,imgui.ImVec2(62, 50)) then if onlinesong ~= nil then setAudioStreamState(onlinesong, as_action.RESUME) end end
+			imgui.Spacing()
+			if onlinesong ~= nil then
+				setAudioStreamVolume(onlinesong, math.floor(volume.v))
+			end
+		end
+		imgui.End()
+	end
+	if win_state['mp3_informer'].v then -- окно информера
+		infoX, infoY = getScreenResolution() -- получаем размер экрана
+		imgui.SetNextWindowPos(imgui.ImVec2(infoX-400, infoY-50), imgui.ImVec2(0.5, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(200, 200), imgui.Cond.FirstUseEver)
+
+		imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.0, 0.0, 0.0, 0.3))
+		if imgui.Begin("MP3 Informer", win_state['mp3_informer'], imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize + imgui.WindowFlags.NoSavedSettings) then
+			imgui.Separator()
+			imgui.Text(u8("• Играет: "..informer_song))
+			imgui.End()
+		end
+		imgui.PopStyleColor()
+	end
+	if win_state['update'].v then
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(450, 200), imgui.Cond.FirstUseEver)
 
 		imgui.Begin(fa(0xf0ed)..u8(' Обновление'), nil, imgui.WindowFlags.NoResize)
 
 		imgui.Text(u8'Обнаружено обновление до версии: '..updatever)
-		
+
 		imgui.Separator()
-		
+
 		imgui.TextWrapped(u8("Для установки обновления необходимо подтверждение пользователя, разработчик настоятельно рекомендует принимать обновления ввиду того, что прошлые версии через определенное время отключаются и более не работают."))
-		
+
 		if imgui.Button(u8'Скачать и установить обновление', btn_size) then
 			async_http_request('GET', 'https://geekhub.pro/samp/geekhelper/GeekHelper.lua', nil,
-				function(response) 
+				function(response)
 				local f = assert(io.open(getWorkingDirectory() .. '/GeekHelper.lua', 'wb'))
 				f:write(response.text)
 				f:close()
 				sampAddChatMessage("[GeekHelper]{FFFFFF} Обновление успешно, перезагружаем скрипт.", 0x046D63)
 				thisScript():reload()
 			end,
-			function(err) 
+			function(err)
 				print(err)
 				sampAddChatMessage("[GeekHelper]{FFFFFF} Произошла ошибка при обновлении, попробуйте позже.", 0x046D63)
 				win_state['update'].v = not win_state['update'].v
@@ -1341,5 +1477,18 @@ function imgui.OnDrawFrame()
 		end
 
 		imgui.End()
+	end
+
+end
+function onScriptTerminate(script, quitGame) -- действия при отключении скрипта
+	if script == thisScript() then
+		showCursor(false)
+
+			bass.BASS_ChannelPlay(aerr, false) -- воспроизводим звук краша
+			lockPlayerControl(false) -- снимаем блок персонажа на всякий
+
+			if not reloadScript then -- выводим текст
+				sampAddChatMessage("[GeekHelper]{FFFFFF} Произошла ошибка, скрипт завершил свою работу принудительно.", 0x046D63)
+			end
 	end
 end

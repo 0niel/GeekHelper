@@ -186,9 +186,8 @@ function Config:Load()
 	local tmpn = ini:load(getGameDirectory()..Config.path..Config.name)
 	if tmpn ~= nil then
 		for sec, tbl in pairs(tmpn) do
-			print('['..sec..']')
 			if Config.ini[sec] == nil then Config.ini[sec] = {} end
-			for key, val in pairs(tbl) do Config.ini[sec][key] = val print(key..'='..tostring(val)) end
+			for key, val in pairs(tbl) do Config.ini[sec][key] = val end
 		end
 	else
 		if bNotf then notf.addNotification('Config not loaded.', 4, 3) end
@@ -199,49 +198,7 @@ end
 
 function Style(name)
 	ok = true
-	if name == 'Light' then
-		imgui.GetStyle().Colors[imgui.Col.Text]                 = imgui.ImVec4(0.00, 0.00, 0.00, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.TextDisabled]         = imgui.ImVec4(0.60, 0.60, 0.60, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.WindowBg]             = imgui.ImVec4(0.94, 0.94, 0.94, 0.94)
-		imgui.GetStyle().Colors[imgui.Col.ChildWindowBg]        = imgui.ImVec4(0.00, 0.00, 0.00, 0.00)
-		imgui.GetStyle().Colors[imgui.Col.PopupBg]              = imgui.ImVec4(1.00, 1.00, 1.00, 0.94)
-		imgui.GetStyle().Colors[imgui.Col.Border]               = imgui.ImVec4(0.00, 0.00, 0.00, 0.39)
-		imgui.GetStyle().Colors[imgui.Col.BorderShadow]         = imgui.ImVec4(1.00, 1.00, 1.00, 0.10)
-		imgui.GetStyle().Colors[imgui.Col.FrameBg]              = imgui.ImVec4(1.00, 1.00, 1.00, 0.94)
-		imgui.GetStyle().Colors[imgui.Col.FrameBgHovered]       = imgui.ImVec4(0.26, 0.59, 0.98, 0.40)
-		imgui.GetStyle().Colors[imgui.Col.FrameBgActive]        = imgui.ImVec4(0.26, 0.59, 0.98, 0.67)
-		imgui.GetStyle().Colors[imgui.Col.TitleBg]              = imgui.ImVec4(0.96, 0.96, 0.96, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.TitleBgCollapsed]     = imgui.ImVec4(1.00, 1.00, 1.00, 0.51)
-		imgui.GetStyle().Colors[imgui.Col.TitleBgActive]        = imgui.ImVec4(0.82, 0.82, 0.82, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.MenuBarBg]            = imgui.ImVec4(0.86, 0.86, 0.86, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarBg]          = imgui.ImVec4(0.98, 0.98, 0.98, 0.53)
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrab]        = imgui.ImVec4(0.69, 0.69, 0.69, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabHovered] = imgui.ImVec4(0.59, 0.59, 0.59, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabActive]  = imgui.ImVec4(0.49, 0.49, 0.49, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ComboBg]              = imgui.ImVec4(0.86, 0.86, 0.86, 0.99)
-		imgui.GetStyle().Colors[imgui.Col.CheckMark]            = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.SliderGrab]           = imgui.ImVec4(0.24, 0.52, 0.88, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.SliderGrabActive]     = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.Button]               = imgui.ImVec4(0.26, 0.59, 0.98, 0.40)
-		imgui.GetStyle().Colors[imgui.Col.ButtonHovered]        = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ButtonActive]         = imgui.ImVec4(0.06, 0.53, 0.98, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.Header]               = imgui.ImVec4(0.26, 0.59, 0.98, 0.31)
-		imgui.GetStyle().Colors[imgui.Col.HeaderHovered]        = imgui.ImVec4(0.26, 0.59, 0.98, 0.80)
-		imgui.GetStyle().Colors[imgui.Col.HeaderActive]         = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ResizeGrip]           = imgui.ImVec4(1.00, 1.00, 1.00, 0.50)
-		imgui.GetStyle().Colors[imgui.Col.ResizeGripHovered]    = imgui.ImVec4(0.26, 0.59, 0.98, 0.67)
-		imgui.GetStyle().Colors[imgui.Col.ResizeGripActive]     = imgui.ImVec4(0.26, 0.59, 0.98, 0.95)
-		imgui.GetStyle().Colors[imgui.Col.CloseButton]          = imgui.ImVec4(0.59, 0.59, 0.59, 0.50)
-		imgui.GetStyle().Colors[imgui.Col.CloseButtonHovered]   = imgui.ImVec4(0.98, 0.39, 0.36, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.CloseButtonActive]    = imgui.ImVec4(0.98, 0.39, 0.36, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.PlotLines]            = imgui.ImVec4(0.39, 0.39, 0.39, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.PlotLinesHovered]     = imgui.ImVec4(1.00, 0.43, 0.35, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.PlotHistogram]        = imgui.ImVec4(0.90, 0.70, 0.00, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered] = imgui.ImVec4(1.00, 0.60, 0.00, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.TextSelectedBg]       = imgui.ImVec4(0.26, 0.59, 0.98, 0.35)
-		imgui.GetStyle().Colors[imgui.Col.ModalWindowDarkening] = imgui.ImVec4(0.20, 0.20, 0.20, 0.35)
-
-	elseif name == 'Androvira' then
+	if name == 'Androvira' then
 		imgui.GetStyle().Colors[imgui.Col.Text]                 = imgui.ImVec4(0.80, 0.80, 0.83, 1.00)
 	    imgui.GetStyle().Colors[imgui.Col.TextDisabled]         = imgui.ImVec4(0.24, 0.23, 0.29, 1.00)
 	    imgui.GetStyle().Colors[imgui.Col.WindowBg]             = imgui.ImVec4(0.06, 0.05, 0.07, 1.00)
@@ -989,7 +946,6 @@ function main()
 	imgui.Process = win_state['update'].v or win_state['main'].v
 	sampRegisterChatCommand("gh", mainmenu)
 	Config:Load()
-	print('check: '..tostring(Config.ini.imgui.val.v))
 	while true do
 		imgui.Process = win_state['main'].v
 		wait(0)
@@ -1055,19 +1011,19 @@ function imgui.BeforeDrawFrame()
 		font_config.MergeMode = true
 
 		local check
-		check = io.open('moonloader/GeekHelper/files/fontawesome-webfont.ttf', 'r')
+		check = io.open('moonloader/GeekHelper/fonts/fontawesome-webfont.ttf', 'r')
 		if check:read('*a') == nil then error('fontawesome-webfont.ttf not found') end
-		check = io.open('moonloader/GeekHelper/files/gtasa.otf', 'r')
+		check = io.open('moonloader/GeekHelper/fonts/gtasa.otf', 'r')
 		if check:read('*a') == nil then error('gtasa.otf not found') end
 
-		fa_font = imgui.GetIO().Fonts:AddFontFromFileTTF('moonloader/GeekHelper/files/fontawesome-webfont.ttf', 14.0, font_config, fa_glyph_ranges)
-		menubar_font = imgui.GetIO().Fonts:AddFontFromFileTTF('moonloader/GeekHelper/files/gtasa.otf', 28.0)
+		fa_font = imgui.GetIO().Fonts:AddFontFromFileTTF('moonloader/GeekHelper/fonts/fontawesome-webfont.ttf', 14.0, font_config, fa_glyph_ranges)
+		menubar_font = imgui.GetIO().Fonts:AddFontFromFileTTF('moonloader/GeekHelper/fonts/gtasa.otf', 28.0)
 		--imgui.Fonts:Build()
 		--imgui.ImFontAtlas:Build()
 
-		fa_font_file = io.open('moonloader/GeekHelper/files/fontawesome-webfont.ttf', 'r')
+		fa_font_file = io.open('moonloader/GeekHelper/fonts/fontawesome-webfont.ttf', 'r')
 		fa_font_file_read = fa_font_file:read('*a')
-		menubar_file = io.open('moonloader/GeekHelper/files/gtasa.otf', 'r')
+		menubar_file = io.open('moonloader/GeekHelper/fonts/gtasa.otf', 'r')
 		menubar_file_read = menubar_file:read('*a')
 
 		fa_font_md5 = md5.sumhexa(tostring(fa_font_file_read))
@@ -1109,7 +1065,7 @@ function async_http_request(method, url, args, resolve, reject)
 	end)
 end
 
-img = imgui.CreateTextureFromFile(getGameDirectory()..'\\moonloader\\GeekHelper\\files\\anime2.png')
+img = imgui.CreateTextureFromFile(getGameDirectory()..'\\moonloader\\GeekHelper\\images\\anime2.png')
 function anime()
 	w, h = getScreenResolution()
 	aw, ah = 313, 320
@@ -1135,7 +1091,6 @@ function imgui.OnDrawFrame()
 	imgui.PushFont(menubar_font)
 	if imgui.BeginMainMenuBar() then
 		if imgui.BeginMenu('Styles') then
-			if imgui.MenuItem('Light')     then Style('Light')     end
 			if imgui.MenuItem('Androvira') then Style('Androvira') end
 			if imgui.MenuItem('Hacker')    then Style('Hacker')    end
 			if imgui.MenuItem('Orange')    then Style('Orange')    end

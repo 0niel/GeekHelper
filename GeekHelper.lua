@@ -70,6 +70,7 @@ u8 = encoding.UTF8
 
 
 local win_state = {}
+win_state['image'] = imgui.ImBool(true)
 win_state['update'] = imgui.ImBool(false)
 win_state['main'] = imgui.ImBool(false)
 win_state['settings'] = imgui.ImBool(false)
@@ -99,7 +100,11 @@ function ini:save(data, path, name)
 	for sec, tbl in pairs(data) do
 		res = res..'['..sec..']\n'
 		for key, val in pairs(tbl) do
-			res = res..key..'='..val..'\n'
+			if sec == 'imgui' then
+				res = res..key..'='..type(val.v)..'.'..tostring(val.v)..'\n'
+			else
+				res = res..key..'='..tostring(val)..'\n'
+			end
 		end
 	end
 	local fw
@@ -111,60 +116,75 @@ end
 function ini:load(path)
 	local fw
 	fw = io.open(path, 'r')
-	if fw:read('*a') == nil then return nil end
-	new = {}
-	sec = ''
-	fw = io.open(path, 'r')
 	txt = fw:read('*a')
+	if txt == nil then return nil end
+	local new1 = {}
+	local sec1 = ''
 	for line in string.gmatch(txt, '([^'..'\n'..']+)') do
 		t = {}
 		line:gsub('.', function(c) table.insert(t, c) end)
 		if t[1] == '[' then
 			for tmp in string.gmatch(line, '(%w+)') do
-				new[tmp] = {}
-				sec = tmp
+				new1[tmp] = {}
+				sec1 = tmp
 			end
 		else
 			f = false
 			t1 = nil
 			t2 = nil
 			for tmp in string.gmatch(line, '([^'..'='..']+)') do
-				if not f then
-					t1 = tmp
-				else
-					t2 = tmp
-				end
+				if not f then t1 = tmp
+				else t2 = tmp end
 				f = not f
 			end
-			new[sec][t1] = t2
+			if sec1 == 'imgui' then
+				local k = false
+				local tp = nil
+				local vl = nil
+				for tt in string.gmatch(t2, '([^'..'.'..']+)') do
+					if not k then tp = tt
+					else vl = tt end
+					k = not k
+				end
+				if tp == 'boolean' then
+					if vl == 'false' then new1[sec1][t1] = imgui.ImBool(false)
+					else new1[sec1][t1] = imgui.ImBool(true) end
+				elseif tp == 'number' ~= nil then
+					if string.match(vl, '%.') == nil then new1[sec1][t1] = imgui.ImNumber(t2)
+					else new1[sec1][t1] = imgui.ImFloat(t2) end
+				end
+			else
+				new1[sec1][t1] = t2
+			end
 		end
 	end
 	fw:close()
-	return new
+	return new1
 end
 
 
 local Config = {
 	ini = {
 		style = {
-			name = 'Androvira'
+			name = 'Midnight'
 		}
 	},
 	name = 'settings.ini',
-	path = '\\moonloader\\config\\GeekHelper\\'
+	path = '\\moonloader\\config\\GeekHelper\\',
 }
 
 function Config:Save()
 	ini:save(Config.ini, getGameDirectory()..Config.path, Config.name)
-	--lfs.mkdir(getGameDirectory()..Config.path)
-	--json:encode(Config.ini)
-	--inicfg.save(Config.ini, getGameDirectory()..Config.path..Config.name)
 end
 
 function Config:Load()
-	tmp = ini:load(getGameDirectory()..Config.path..Config.name)
-	if tmp ~= nil then
-		Config.ini = tmp
+	local tmpn = ini:load(getGameDirectory()..Config.path..Config.name)
+	if tmpn ~= nil then
+		for sec, tbl in pairs(tmpn) do
+			print('['..sec..']')
+			if Config.ini[sec] == nil then Config.ini[sec] = {} end
+			for key, val in pairs(tbl) do Config.ini[sec][key] = val print(key..'='..tostring(val)) end
+		end
 	end
 	Style(Config.ini.style.name)
 end
@@ -425,47 +445,47 @@ function Style(name)
 		--imgui.GetStyle().Colors[imgui.Col.NavWindowingDimBg]     = imgui.ImVec4(0.80, 0.80, 0.80, 0.20)
 		--imgui.GetStyle().Colors[imgui.Col.ModalWindowDimBg]      = imgui.ImVec4(0.80, 0.80, 0.80, 0.35)
 	elseif name == 'Purple' then
-		imgui.GetStyle().Colors[imgui.Col.Text] = imgui.ImVec4(0.87, 0.85, 0.92, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.TextDisabled] = imgui.ImVec4(0.87, 0.85, 0.92, 0.58)
-		imgui.GetStyle().Colors[imgui.Col.WindowBg] = imgui.ImVec4(0.13, 0.12, 0.16, 0.71)
-		imgui.GetStyle().Colors[imgui.Col.ChildWindowBg] = imgui.ImVec4(0.27, 0.20, 0.39, 0.00)
-		imgui.GetStyle().Colors[imgui.Col.PopupBg] = imgui.ImVec4(0.05, 0.05, 0.10, 0.90)
-		imgui.GetStyle().Colors[imgui.Col.Border] = imgui.ImVec4(0.87, 0.85, 0.92, 0.30)
-		imgui.GetStyle().Colors[imgui.Col.BorderShadow] = imgui.ImVec4(0.00, 0.00, 0.00, 0.00)
-		imgui.GetStyle().Colors[imgui.Col.FrameBg] = imgui.ImVec4(0.27, 0.20, 0.39, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.FrameBgHovered] = imgui.ImVec4(0.34, 0.19, 0.63, 0.68)
-		imgui.GetStyle().Colors[imgui.Col.FrameBgActive] = imgui.ImVec4(0.46, 0.27, 0.80, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.TitleBg] = imgui.ImVec4(0.34, 0.19, 0.63, 0.45)
-		imgui.GetStyle().Colors[imgui.Col.TitleBgCollapsed] = imgui.ImVec4(0.34, 0.19, 0.63, 0.35)
-		imgui.GetStyle().Colors[imgui.Col.TitleBgActive] = imgui.ImVec4(0.34, 0.19, 0.63, 0.78)
-		imgui.GetStyle().Colors[imgui.Col.MenuBarBg] = imgui.ImVec4(0.27, 0.20, 0.39, 0.57)
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarBg] = imgui.ImVec4(0.27, 0.20, 0.39, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrab] = imgui.ImVec4(0.34, 0.19, 0.63, 0.31)
+		imgui.GetStyle().Colors[imgui.Col.Text]                 = imgui.ImVec4(0.87, 0.85, 0.92, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.TextDisabled]         = imgui.ImVec4(0.87, 0.85, 0.92, 0.58)
+		imgui.GetStyle().Colors[imgui.Col.WindowBg]             = imgui.ImVec4(0.13, 0.12, 0.16, 0.71)
+		imgui.GetStyle().Colors[imgui.Col.ChildWindowBg]        = imgui.ImVec4(0.27, 0.20, 0.39, 0.00)
+		imgui.GetStyle().Colors[imgui.Col.PopupBg]              = imgui.ImVec4(0.05, 0.05, 0.10, 0.90)
+		imgui.GetStyle().Colors[imgui.Col.Border]               = imgui.ImVec4(0.87, 0.85, 0.92, 0.30)
+		imgui.GetStyle().Colors[imgui.Col.BorderShadow]         = imgui.ImVec4(0.00, 0.00, 0.00, 0.00)
+		imgui.GetStyle().Colors[imgui.Col.FrameBg]              = imgui.ImVec4(0.27, 0.20, 0.39, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.FrameBgHovered]       = imgui.ImVec4(0.34, 0.19, 0.63, 0.68)
+		imgui.GetStyle().Colors[imgui.Col.FrameBgActive]        = imgui.ImVec4(0.46, 0.27, 0.80, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.TitleBg]              = imgui.ImVec4(0.34, 0.19, 0.63, 0.45)
+		imgui.GetStyle().Colors[imgui.Col.TitleBgCollapsed]     = imgui.ImVec4(0.34, 0.19, 0.63, 0.35)
+		imgui.GetStyle().Colors[imgui.Col.TitleBgActive]        = imgui.ImVec4(0.34, 0.19, 0.63, 0.78)
+		imgui.GetStyle().Colors[imgui.Col.MenuBarBg]            = imgui.ImVec4(0.27, 0.20, 0.39, 0.57)
+		imgui.GetStyle().Colors[imgui.Col.ScrollbarBg]          = imgui.ImVec4(0.27, 0.20, 0.39, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrab]        = imgui.ImVec4(0.34, 0.19, 0.63, 0.31)
 		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabHovered] = imgui.ImVec4(0.34, 0.19, 0.63, 0.78)
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabActive] = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.CheckMark] = imgui.ImVec4(0.34, 0.19, 0.63, 0.80)
-		imgui.GetStyle().Colors[imgui.Col.SliderGrab] = imgui.ImVec4(0.34, 0.19, 0.63, 0.24)
-		imgui.GetStyle().Colors[imgui.Col.SliderGrabActive] = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.Button] = imgui.ImVec4(0.34, 0.19, 0.63, 0.44)
-		imgui.GetStyle().Colors[imgui.Col.ButtonHovered] = imgui.ImVec4(0.34, 0.19, 0.63, 0.86)
-		imgui.GetStyle().Colors[imgui.Col.ButtonActive] = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.Header] = imgui.ImVec4(0.34, 0.19, 0.63, 0.76)
-		imgui.GetStyle().Colors[imgui.Col.HeaderHovered] = imgui.ImVec4(0.34, 0.19, 0.63, 0.86)
-		imgui.GetStyle().Colors[imgui.Col.HeaderActive] = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
-		--imgui.GetStyle().Colors[imgui.Col.Column] = imgui.ImVec4(0.87, 0.85, 0.92, 0.32)
-		--imgui.GetStyle().Colors[imgui.Col.ColumnHovered] = imgui.ImVec4(0.87, 0.85, 0.92, 0.78)
-		--imgui.GetStyle().Colors[imgui.Col.ColumnActive] = imgui.ImVec4(0.87, 0.85, 0.92, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ResizeGrip] = imgui.ImVec4(0.34, 0.19, 0.63, 0.20)
-		imgui.GetStyle().Colors[imgui.Col.ResizeGripHovered] = imgui.ImVec4(0.34, 0.19, 0.63, 0.78)
-		imgui.GetStyle().Colors[imgui.Col.ResizeGripActive] = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.CloseButton] = imgui.ImVec4(0.87, 0.85, 0.92, 0.16)
-		imgui.GetStyle().Colors[imgui.Col.CloseButtonHovered] = imgui.ImVec4(0.87, 0.85, 0.92, 0.39)
-		imgui.GetStyle().Colors[imgui.Col.CloseButtonActive] = imgui.ImVec4(0.87, 0.85, 0.92, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.PlotLines] = imgui.ImVec4(0.87, 0.85, 0.92, 0.63)
-		imgui.GetStyle().Colors[imgui.Col.PlotLinesHovered] = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.PlotHistogram] = imgui.ImVec4(0.87, 0.85, 0.92, 0.63)
+		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabActive]  = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.CheckMark]            = imgui.ImVec4(0.34, 0.19, 0.63, 0.80)
+		imgui.GetStyle().Colors[imgui.Col.SliderGrab]           = imgui.ImVec4(0.34, 0.19, 0.63, 0.24)
+		imgui.GetStyle().Colors[imgui.Col.SliderGrabActive]     = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.Button]               = imgui.ImVec4(0.34, 0.19, 0.63, 0.44)
+		imgui.GetStyle().Colors[imgui.Col.ButtonHovered]        = imgui.ImVec4(0.34, 0.19, 0.63, 0.86)
+		imgui.GetStyle().Colors[imgui.Col.ButtonActive]         = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.Header]               = imgui.ImVec4(0.34, 0.19, 0.63, 0.76)
+		imgui.GetStyle().Colors[imgui.Col.HeaderHovered]        = imgui.ImVec4(0.34, 0.19, 0.63, 0.86)
+		imgui.GetStyle().Colors[imgui.Col.HeaderActive]         = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
+		--imgui.GetStyle().Colors[imgui.Col.Column]               = imgui.ImVec4(0.87, 0.85, 0.92, 0.32)
+		--imgui.GetStyle().Colors[imgui.Col.ColumnHovered]        = imgui.ImVec4(0.87, 0.85, 0.92, 0.78)
+		--imgui.GetStyle().Colors[imgui.Col.ColumnActive]         = imgui.ImVec4(0.87, 0.85, 0.92, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.ResizeGrip]           = imgui.ImVec4(0.34, 0.19, 0.63, 0.20)
+		imgui.GetStyle().Colors[imgui.Col.ResizeGripHovered]    = imgui.ImVec4(0.34, 0.19, 0.63, 0.78)
+		imgui.GetStyle().Colors[imgui.Col.ResizeGripActive]     = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.CloseButton]          = imgui.ImVec4(0.87, 0.85, 0.92, 0.16)
+		imgui.GetStyle().Colors[imgui.Col.CloseButtonHovered]   = imgui.ImVec4(0.87, 0.85, 0.92, 0.39)
+		imgui.GetStyle().Colors[imgui.Col.CloseButtonActive]    = imgui.ImVec4(0.87, 0.85, 0.92, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.PlotLines]            = imgui.ImVec4(0.87, 0.85, 0.92, 0.63)
+		imgui.GetStyle().Colors[imgui.Col.PlotLinesHovered]     = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
+		imgui.GetStyle().Colors[imgui.Col.PlotHistogram]        = imgui.ImVec4(0.87, 0.85, 0.92, 0.63)
 		imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered] = imgui.ImVec4(0.34, 0.19, 0.63, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.TextSelectedBg] = imgui.ImVec4(0.34, 0.19, 0.63, 0.43)
+		imgui.GetStyle().Colors[imgui.Col.TextSelectedBg]       = imgui.ImVec4(0.34, 0.19, 0.63, 0.43)
 		imgui.GetStyle().Colors[imgui.Col.ModalWindowDarkening] = imgui.ImVec4(0.20, 0.20, 0.20, 0.35)
 	elseif name == 'Green' then
 		imgui.GetStyle().Colors[imgui.Col.Text]                  = imgui.ImVec4(0.90, 0.90, 0.90, 1.00)
@@ -866,6 +886,8 @@ function Style(name)
 	end
 	if ok then
 		Config.ini.style.name = name
+	else
+		print('Theme "'..name..'" not found.')
 	end
 end
 
@@ -958,6 +980,7 @@ function main()
 	imgui.Process = win_state['update'].v or win_state['main'].v
 	sampRegisterChatCommand("gh", mainmenu)
 	Config:Load()
+	print('check: '..tostring(Config.ini.imgui.val.v))
 	while true do
 		imgui.Process = win_state['main'].v
 		wait(0)
@@ -1077,6 +1100,20 @@ function async_http_request(method, url, args, resolve, reject)
 	end)
 end
 
+img = imgui.CreateTextureFromFile(getGameDirectory()..'\\moonloader\\GeekHelper\\files\\anime2.png')
+function anime()
+	w, h = getScreenResolution()
+	aw, ah = 313, 320
+	imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0, 0, 0, 0))
+	imgui.SetNextWindowPos(imgui.ImVec2(0, h - ah))
+	imgui.Begin('', win_state['image'], imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoMove + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoScrollWithMouse + imgui.WindowFlags.NoCollapse + imgui.WindowFlags.AlwaysAutoResize)
+
+	imgui.Image(img, imgui.ImVec2(aw, ah))
+	
+	imgui.End()
+	imgui.PopStyleColor()
+end
+
 function imgui.OnDrawFrame()
 	local tLastKeys = {} 
 	local sw, sh = getScreenResolution() 
@@ -1117,7 +1154,12 @@ function imgui.OnDrawFrame()
 	imgui.PopFont()
 	imgui.PopStyleVar()
 
+	--imgui.Image(getGameDirectory()..'\\moonloader\\GeekHelper\\files\\anime.png', imgui.ImVec2(589, 782))
+
 	--imgui.ShowCursor = win_state['update'].v
+
+	lua_thread.create(anime)
+
 	if win_state['main'].v then 
 		imgui.SetNextWindowPos(imgui.ImVec2(sw / 2, sh / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(280, 250), imgui.Cond.FirstUseEver)

@@ -82,8 +82,10 @@ win_state['mods'] = imgui.ImBool(false)
 win_state['style'] = imgui.ImBool(false)
 win_state['about'] = imgui.ImBool(false)
 win_state['mp3_informer'] = imgui.ImBool(false)
+win_state['mp3'] = imgui.ImBool(false)
 
 
+strobesOn = imgui.ImBool(false)
 cb1 = imgui.ImBool(false)
 cb2 = imgui.ImBool(false)
 rb = imgui.ImInt(1)
@@ -102,6 +104,10 @@ notf_type = imgui.ImInt(1)
 
 
 ini = {}
+function SCM(text)
+	sampAddChatMessage("[GeekHelper]" .. text, 0x046D63)
+end
+
 function ini:save(data, path, name)
 	lfs.mkdir(path)
 	res = ''
@@ -199,6 +205,10 @@ function Config:Load()
 	else
 		if bNotf then notf.addNotification('Config not loaded.', 4, 3) end
 	end
+
+
+
+
 	Style(Config.ini.style.name)
 	if bNotf then notf.addNotification('Конфиг успешно загружен.', 4, 2) end
 end
@@ -967,6 +977,8 @@ function main()
 		imgui.Process = win_state['main'].v or win_state['mp3_informer'].v
 		wait(0)
 	end
+
+	if wasKeyPressed(key.VK_H) and not sampIsChatInputActive() and not sampIsDialogActive() and strobesOn.v then strobes() end -- стробоскопы на H, не делал на гудок ибо не хочу
 end
 
 function mainmenu()
@@ -1185,72 +1197,7 @@ function imgui.OnDrawFrame()
 		imgui.SetNextWindowSize(imgui.ImVec2(600, 900), imgui.Cond.FirstUseEver)
 		imgui.Begin(fa(0xf0ad)..u8' Модификации', win_state['mods'])
 
-		--imgui.AlignTextToFramePadding(); imgui.Text(u8(" Чат на клавишу Т")); imgui.SameLine(); imgui.Checkbox(u8'Чат на клавишу T', keyT)
-
-		imgui.Spacing()
-		imgui.Separator()
-		imgui.Spacing()
-
-		if imgui.Button('button') then pres = pres + 1 end
-
-		imgui.BeginGroup()
-		imgui.Text('group')
-		imgui.EndGroup()
-
-		imgui.Columns(3, 'cols', true)
-
-		imgui.Text('bullet')
-		imgui.Bullet()
-
-		imgui.Checkbox('checkbox1', cb1)
-
-		imgui.Bullet()
-		imgui.Checkbox('checkbox2', cb2)
-
-		imgui.RadioButton('radio1', rb, 0)
-		imgui.RadioButton('radio2', rb, 1)
-
-		imgui.Combo('combo', c, {'item1', 'item2', 'item3'}, 3)
-
-		imgui.InputText('inputtext', it)
-		imgui.Text('text: '..it.v)
-
-		imgui.DragFloat('dragfloat', df, imgui.ImFloat(0.001), 0, 100, '%.3f', imgui.ImFloat(0.001))
-
-		imgui.SliderFloat('sliderfloat', sf, 0, 100, '%.3f', imgui.ImFloat(0.001))
-
-		imgui.Selectable('selectable1', false, 0, imgui.ImVec2(70, 20))
-		imgui.Selectable('selectable2', s, 0, imgui.ImVec2(70, 20))
-		text = 'selected'
-		if not s.v then text = 'not '..text end
-		imgui.Text(text)
-
-		imgui.ListBox('listbox', lb, {'item1', 'item2', 'item3'})
-
-		imgui.NextColumn()
-		imgui.Text('nextcolumn: ')
-		imgui.ColorEdit4('coloredit4', f4)
-
-		imgui.InputText('notf text', notf_text)
-		imgui.SliderInt('notf duration', notf_duration, 1, 10, '%.0f')
-		imgui.SliderInt('notf type', notf_type, 1, 3, '%.0f')
-		if notf_type.v == 1 then
-			imgui.Text('type: normal')
-		elseif notf_type.v == 2 then
-			imgui.Text('type: info')
-		elseif notf_type.v == 3 then
-			imgui.Text('type: error')
-		else
-			imgui.Text('type: ???')
-		end
-		if imgui.Button('start notf') then
-			if bNotf then
-				notf.addNotification(notf_text.v, notf_duration.v, notf_type.v)
-			end
-		end
-		imgui.NextColumn()
-		imgui.Text('button pressed: '..tostring(pres))
-		imgui.ColorPicker4('colorpicker4', f4)
+		imgui.Checkbox(u8'Стробоскопы', strobesOn)
 
 		imgui.End()
 	end
@@ -1490,5 +1437,32 @@ function onScriptTerminate(script, quitGame) -- действия при отключении скрипта
 			if not reloadScript then -- выводим текст
 				sampAddChatMessage("[GeekHelper]{FFFFFF} Произошла ошибка, скрипт завершил свою работу принудительно.", 0x046D63)
 			end
+	end
+end
+function strobes() -- стробоскопы
+	if not isCharOnAnyBike(PLAYER_PED) and not isCharInAnyBoat(PLAYER_PED) and not isCharInAnyHeli(PLAYER_PED) and not isCharInAnyPlane(PLAYER_PED) then
+		if not enableStrobes then
+			enableStrobes = true
+			lua_thread.create(function()
+				vehptr = getCarPointer(storeCarCharIsInNoSave(PLAYER_PED)) + 1440
+				while enableStrobes and isCharInAnyCar(PLAYER_PED) do
+					-- 0 левая, 1 правая фары, 3 задние
+					callMethod(7086336, vehptr, 2, 0, 0, 0)
+					callMethod(7086336, vehptr, 2, 0, 1, 1)
+					wait(150)
+					callMethod(7086336, vehptr, 2, 0, 0, 1)
+					callMethod(7086336, vehptr, 2, 0, 1, 0)
+					wait(150)
+					if not isCharInAnyCar(PLAYER_PED) then
+						enableStrobes = false
+						break
+					end
+				end
+				callMethod(7086336, vehptr, 2, 0, 0, 0)
+				callMethod(7086336, vehptr, 2, 0, 1, 0)
+			end)
+		else
+			enableStrobes = false
+		end
 	end
 end

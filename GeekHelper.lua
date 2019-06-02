@@ -92,7 +92,6 @@ ffi.cdef[[
 	void* __stdcall ShellExecuteA(void* hwnd, const char* op, const char* file, const char* params, const char* dir, int show_cmd);
 	uint32_t __stdcall CoInitializeEx(void*, uint32_t);
 
-);
 ]]
 
 local BuffSize = 32
@@ -100,7 +99,7 @@ local KeyboardLayoutName = ffi.new("char[?]", BuffSize)
 local LocalInfo = ffi.new("char[?]", BuffSize)
 local shell32 = ffi.load 'Shell32'
 local ole32 = ffi.load 'Ole32'
-
+hparmCout = imgui.ImBool(false)
 chatInfo = imgui.ImBool(false)
 strobesOn = imgui.ImBool(false)
 cb1 = imgui.ImBool(false)
@@ -119,6 +118,8 @@ notf_text = imgui.ImBuffer(256)
 notf_duration = imgui.ImInt(1)
 notf_type = imgui.ImInt(1)
 
+keyShow = VK_M
+reduceZoom = true
 
 ini = {}
 function SCM(text)
@@ -993,14 +994,33 @@ function main()
 	bass.BASS_ChannelSetAttribute(aerr, BASS_ATTRIB_VOL, 3.0)
 	------------------------------------------------------------
 	Config:Load()
-	while true do
-		imgui.Process = win_state['main'].v or win_state['mp3_informer'].v
-		wait(0)
-	end
 
 	if wasKeyPressed(key.VK_H) and not sampIsChatInputActive() and not sampIsDialogActive() and strobesOn.v then strobes() end -- стробоскопы на H, не делал на гудок ибо не хочу
-end
 
+
+	while true do
+		imgui.Process = win_state['main'].v or win_state['mp3_informer'].v
+		if hparmCout.v then
+			hparmRender()
+		end
+		wait(0)
+	end
+end
+function hparmRender()
+		useRenderCommands(true) -- use lua render
+		setTextCentre(true) -- set text centered
+		setTextScale(0.2, 0.5) -- x y size
+		setTextColour(255--[[r]], 255--[[g]], 255--[[b]], 255--[[a]])
+		setTextEdge(1--[[outline size]], 0--[[r]], 0--[[g]], 0--[[b]], 255--[[a]])
+		displayTextWithNumber(578.0, 68.5, 'NUMBER', getCharHealth(PLAYER_PED))
+		if getCharArmour(PLAYER_PED) > 0 then
+			setTextCentre(true) -- set text centered
+			setTextScale(0.2, 0.5) -- x y size
+			setTextColour(255--[[r]], 255--[[g]], 255--[[b]], 255--[[a]])
+			setTextEdge(1--[[outline size]], 0--[[r]], 0--[[g]], 0--[[b]], 255--[[a]])
+			displayTextWithNumber(578.0, 47.0, 'NUMBER', getCharArmour(PLAYER_PED))
+		end
+end
 function mainmenu()
 	win_state['main'].v = not win_state['main'].v
 end
@@ -1253,6 +1273,7 @@ function imgui.OnDrawFrame()
 
 		imgui.Checkbox(u8'Стробоскопы', strobesOn)
 		imgui.Checkbox(u8'ChatInfo', chatInfo)
+		imgui.Checkbox(u8'ХП и Броня в цифрах', hparmCout)
 		imgui.End()
 	end
 	if win_state['settings'].v then

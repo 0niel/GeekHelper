@@ -66,6 +66,7 @@ lfs = require('lfs')
 encoding = require 'encoding'
 encoding.default = 'CP1251'
 u8 = encoding.UTF8
+
 local as_action = require('moonloader').audiostream_state
 local volume = imgui.ImFloat('50')
 local antiafkmode = imgui.ImBool(false)
@@ -81,8 +82,8 @@ win_state['settings'] = imgui.ImBool(false)
 win_state['mods'] = imgui.ImBool(false)
 win_state['style'] = imgui.ImBool(false)
 win_state['about'] = imgui.ImBool(false)
-win_state['mp3_informer'] = imgui.ImBool(false)
 win_state['mp3'] = imgui.ImBool(false)
+win_state['mp3_informer'] = imgui.ImBool(false)
 
 ffi.cdef[[
 	short GetKeyState(int nVirtKey);
@@ -101,6 +102,7 @@ local shell32 = ffi.load 'Shell32'
 local ole32 = ffi.load 'Ole32'
 hparmCout = imgui.ImBool(false)
 chatInfo = imgui.ImBool(false)
+
 strobesOn = imgui.ImBool(false)
 cb1 = imgui.ImBool(false)
 cb2 = imgui.ImBool(false)
@@ -114,6 +116,8 @@ s = imgui.ImBool(false)
 f4 = imgui.ImFloat4(0, 0, 0, 0)
 pres = 0
 
+lang_num = imgui.ImInt(1)
+
 notf_text = imgui.ImBuffer(256)
 notf_duration = imgui.ImInt(1)
 notf_type = imgui.ImInt(1)
@@ -121,11 +125,11 @@ notf_type = imgui.ImInt(1)
 keyShow = VK_M
 reduceZoom = true
 
-ini = {}
 function SCM(text)
 	sampAddChatMessage("[GeekHelper]" .. text, 0x046D63)
 end
 
+ini = {}
 function ini:save(data, path, name)
 	lfs.mkdir(path)
 	res = ''
@@ -148,8 +152,8 @@ end
 function ini:load(path)
 	local fw
 	fw = io.open(path, 'r')
-	txt = fw:read('*a')
 	if txt == nil then return nil end
+	txt = fw:read('*a')
 	local new1 = {}
 	local sec1 = ''
 	for line in string.gmatch(txt, '([^'..'\n'..']+)') do
@@ -194,20 +198,54 @@ function ini:load(path)
 	return new1
 end
 
-
 local Config = {
 	ini = {
 		style = {
 			name = 'Midnight'
+		},
+		global = {
+			language = 'ru'
 		}
 	},
 	name = 'settings.ini',
 	path = '\\moonloader\\config\\GeekHelper\\',
+	lang = {}
 }
+
+local Localization = {}
+
+function Localization:get(k)
+	local t = Localization[Config.ini.global.language][k]
+	if t ~= nil then return t
+	else return 'Localization.'..Config.ini.global.language..'.'..k
+	end
+end
+
+function ChangeLanguage()
+	Config.ini.global.language = Config.lang[lang_num.v + 1]
+end
+
+function InitializeLocalizations()
+	for tt in io.popen([[dir "moonloader\GeekHelper\localizations" /b]]):lines() do
+		tw = tt:match('(.*).json')
+		table.insert(Config.lang, tw)
+	end
+
+	for _, lang in pairs(Config.lang) do
+		f = io.open(getGameDirectory()..'\\moonloader\\GeekHelper\\localizations\\'..lang..'.json')
+		if f ~= nil then
+			local txt = f:read('*a')
+			Localization[lang] = decodeJson(txt)
+			if bNotf then notf.addNotification('Файл с '..lang..' локализацией успешно загружен.', 4, 2) end
+		else
+			if bNotf then notf.addNotification('Ошибка загрузки '..lang..' локализации.', 4, 3) end
+		end
+	end
+end
 
 function Config:Save()
 	ini:save(Config.ini, getGameDirectory()..Config.path, Config.name)
-	if bNotf then notf.addNotification('Конфиг успешно сохранен.', 4, 2) end
+	if bNotf then notf.addNotification('Конфигурация успешно загружена.', 4, 2) end
 end
 
 function Config:Load()
@@ -221,14 +259,10 @@ function Config:Load()
 			for key, val in pairs(tbl) do Config.ini[sec][key] = val end
 		end
 	else
-		if bNotf then notf.addNotification('Config not loaded.', 4, 3) end
+		if bNotf then notf.addNotification('Конфигурация не загружена.', 4, 3) end
 	end
-
-
-
-
 	Style(Config.ini.style.name)
-	if bNotf then notf.addNotification('Конфиг успешно загружен.', 4, 2) end
+	if bNotf then notf.addNotification('Конфигурация успешно загружена.', 4, 2) end
 end
 
 function Style(name)
@@ -575,51 +609,7 @@ function Style(name)
 		imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered] = imgui.ImVec4(1.00, 0.60, 0.00, 1.00)
 		imgui.GetStyle().Colors[imgui.Col.TextSelectedBg]       = imgui.ImVec4(0.00, 0.00, 1.00, 0.35)
 		imgui.GetStyle().Colors[imgui.Col.ModalWindowDarkening] = imgui.ImVec4(0.20, 0.20, 0.20, 0.35)
-
-	elseif name == 'Deault' then
-		imgui.GetStyle().Colors[imgui.Col.Text]                 = imgui.ImVec4(0.00, 0.00, 0.00, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.TextDisabled]         = imgui.ImVec4(0.60, 0.60, 0.60, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.WindowBg]             = imgui.ImVec4(0.94, 0.94, 0.94, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ChildWindowBg]        = imgui.ImVec4(0.00, 0.00, 0.00, 0.00)
-		imgui.GetStyle().Colors[imgui.Col.PopupBg]              = imgui.ImVec4(1.00, 1.00, 1.00, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.Border]               = imgui.ImVec4(0.00, 0.00, 0.00, 0.39)
-		imgui.GetStyle().Colors[imgui.Col.BorderShadow]         = imgui.ImVec4(1.00, 1.00, 1.00, 0.10)
-		imgui.GetStyle().Colors[imgui.Col.FrameBg]              = imgui.ImVec4(1.00, 1.00, 1.00, 0.94)
-		imgui.GetStyle().Colors[imgui.Col.FrameBgHovered]       = imgui.ImVec4(0.26, 0.59, 0.98, 0.40)
-		imgui.GetStyle().Colors[imgui.Col.FrameBgActive]        = imgui.ImVec4(0.26, 0.59, 0.98, 0.67)
-		imgui.GetStyle().Colors[imgui.Col.TitleBg]              = imgui.ImVec4(0.96, 0.96, 0.96, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.TitleBgCollapsed]     = imgui.ImVec4(1.00, 1.00, 1.00, 0.51)
-		imgui.GetStyle().Colors[imgui.Col.TitleBgActive]        = imgui.ImVec4(0.82, 0.82, 0.82, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.MenuBarBg]            = imgui.ImVec4(0.86, 0.86, 0.86, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarBg]          = imgui.ImVec4(0.98, 0.98, 0.98, 0.53)
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrab]        = imgui.ImVec4(0.69, 0.69, 0.69, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabHovered] = imgui.ImVec4(0.59, 0.59, 0.59, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ScrollbarGrabActive]  = imgui.ImVec4(0.49, 0.49, 0.49, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.CheckMark]            = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.SliderGrab]           = imgui.ImVec4(0.24, 0.52, 0.88, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.SliderGrabActive]     = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.Button]               = imgui.ImVec4(0.26, 0.59, 0.98, 0.40)
-		imgui.GetStyle().Colors[imgui.Col.ButtonHovered]        = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ButtonActive]         = imgui.ImVec4(0.06, 0.53, 0.98, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.Header]               = imgui.ImVec4(0.26, 0.59, 0.98, 0.31)
-		imgui.GetStyle().Colors[imgui.Col.HeaderHovered]        = imgui.ImVec4(0.26, 0.59, 0.98, 0.80)
-		imgui.GetStyle().Colors[imgui.Col.HeaderActive]         = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
-		--imgui.GetStyle().Colors[imgui.Col.Column]               = imgui.ImVec4(0.39, 0.39, 0.39, 1.00)
-		--imgui.GetStyle().Colors[imgui.Col.ColumnHovered]        = imgui.ImVec4(0.26, 0.59, 0.98, 0.78)
-		--imgui.GetStyle().Colors[imgui.Col.ColumnActive]         = imgui.ImVec4(0.26, 0.59, 0.98, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.ResizeGrip]           = imgui.ImVec4(1.00, 1.00, 1.00, 0.50)
-		imgui.GetStyle().Colors[imgui.Col.ResizeGripHovered]    = imgui.ImVec4(0.26, 0.59, 0.98, 0.67)
-		imgui.GetStyle().Colors[imgui.Col.ResizeGripActive]     = imgui.ImVec4(0.26, 0.59, 0.98, 0.95)
-		imgui.GetStyle().Colors[imgui.Col.CloseButton]          = imgui.ImVec4(0.59, 0.59, 0.59, 0.50)
-		imgui.GetStyle().Colors[imgui.Col.CloseButtonHovered]   = imgui.ImVec4(0.98, 0.39, 0.36, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.CloseButtonActive]    = imgui.ImVec4(0.98, 0.39, 0.36, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.PlotLines]            = imgui.ImVec4(0.39, 0.39, 0.39, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.PlotLinesHovered]     = imgui.ImVec4(1.00, 0.43, 0.35, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.PlotHistogram]        = imgui.ImVec4(0.90, 0.70, 0.00, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered] = imgui.ImVec4(1.00, 0.60, 0.00, 1.00)
-		imgui.GetStyle().Colors[imgui.Col.TextSelectedBg]       = imgui.ImVec4(0.26, 0.59, 0.98, 0.35)
-		imgui.GetStyle().Colors[imgui.Col.ModalWindowDarkening] = imgui.ImVec4(0.20, 0.20, 0.20, 0.35)
-
+	
 	elseif name == 'Indigo' then
 		imgui.GetStyle().Colors[imgui.Col.Text]                 = imgui.ImVec4(0.86, 0.93, 0.89, 0.78)
 		imgui.GetStyle().Colors[imgui.Col.TextDisabled]         = imgui.ImVec4(0.92, 0.18, 0.29, 0.78)
@@ -886,9 +876,9 @@ function Style(name)
 	end
 	if ok then
 		Config.ini.style.name = name
-		if bNotf then notf.addNotification('Theme "'..name..'" successfully loaded.', 4, 2) end
+		if bNotf then notf.addNotification('Тема "'..name..'" применена.', 4, 2) end
 	else
-		if bNotf then notf.addNotification('Theme "'..name..'" not loaded.', 4, 2) end
+		if bNotf then notf.addNotification('Тема "'..name..'" не найдена.', 4, 2) end
 	end
 end
 
@@ -994,6 +984,7 @@ function main()
 	bass.BASS_ChannelSetAttribute(aerr, BASS_ATTRIB_VOL, 3.0)
 	------------------------------------------------------------
 	Config:Load()
+	InitializeLocalizations()
 
 	if wasKeyPressed(key.VK_H) and not sampIsChatInputActive() and not sampIsDialogActive() and strobesOn.v then strobes() end -- стробоскопы на H, не делал на гудок ибо не хочу
 
@@ -1005,7 +996,9 @@ function main()
 		end
 		wait(0)
 	end
+																														   
 end
+
 function hparmRender()
 		useRenderCommands(true) -- use lua render
 		setTextCentre(true) -- set text centered
@@ -1021,19 +1014,21 @@ function hparmRender()
 			displayTextWithNumber(578.0, 47.0, 'NUMBER', getCharArmour(PLAYER_PED))
 		end
 end
+
 function mainmenu()
 	win_state['main'].v = not win_state['main'].v
 end
 
 function getMusicList()
 	local files = {}
-	local handleFile, nameFile = findFirstFile('moonloader/GeekHelper/audio/MP3/*.mp3')
+	local handleFile, nameFile = findFirstFile('moonloader/GeekHelper/audio/*.mp3')
 	while nameFile do
 		if handleFile then
 			if not nameFile then
 				findClose(handleFile)
 			else
-				files[#files+1] = nameFile
+				--files[#files+1] = nameFile
+				table.insert(files, nameFile)
 				nameFile = findNextFile(handleFile)
 			end
 		end
@@ -1153,15 +1148,19 @@ img = imgui.CreateTextureFromFile(getGameDirectory()..'\\moonloader\\GeekHelper\
 function anime()
 	w, h = getScreenResolution()
 	aw, ah = 313, 320
+	
 	imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0, 0, 0, 0))
 	imgui.SetNextWindowPos(imgui.ImVec2(0, h - ah))
+	
 	imgui.Begin('', win_state['image'], imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoMove + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoScrollWithMouse + imgui.WindowFlags.NoCollapse + imgui.WindowFlags.AlwaysAutoResize)
 
 	imgui.Image(img, imgui.ImVec2(aw, ah))
-
+	
 	imgui.End()
+
 	imgui.PopStyleColor()
 end
+
 function showInputHelp() -- chatinfo(для меня)
 	while true do
 		local chat = sampIsChatInputActive()
@@ -1197,13 +1196,14 @@ function getStrByState(keyState) -- состояние клавиш для chatinfo
 	return "{9EC73D}Вкл{ffffff}"
 end
 
+
 function imgui.OnDrawFrame()
 	local tLastKeys = {}
 	local sw, sh = getScreenResolution()
 	local btn_size = imgui.ImVec2(-0.1, 0)
 	local btn_size2 = imgui.ImVec2(160, 0)
 	local btn_size3 = imgui.ImVec2(140, 0)
-  imgui.ShowCursor = win_state['main'].v or win_state['update'].v or win_state['settings'].v or win_state['mods'].v or win_state['style'].v or win_state['about'].v
+	imgui.ShowCursor = win_state['main'].v or win_state['update'].v or win_state['settings'].v or win_state['mods'].v or win_state['style'].v or win_state['about'].v
 	--imgui.ShowCursor = imgui.Process
 	imgui.PushStyleVar(imgui.StyleVar.FramePadding, imgui.ImVec2(500, 20))
 	imgui.PushFont(menubar_font)
@@ -1217,7 +1217,6 @@ function imgui.OnDrawFrame()
 			if imgui.MenuItem('Purple')    then Style('Purple')    end
 			if imgui.MenuItem('Violet')    then Style('Violet')    end
 			if imgui.MenuItem('Green')     then Style('Green')     end
-			if imgui.MenuItem('Deault')    then Style('Deault')    end
 			if imgui.MenuItem('Indigo')    then Style('Indigo')    end
 			if imgui.MenuItem('Night')     then Style('Night')     end
 			if imgui.MenuItem('Dunno')     then Style('Dunno')     end
@@ -1231,20 +1230,36 @@ function imgui.OnDrawFrame()
 			if imgui.MenuItem('Save') then Config:Save() end
 			imgui.EndMenu()
 		end
+		--if imgui.BeginMenu(Config.ini.global.language) then
+		--	for _, lng in pairs(Config.lang) do
+		--		if lng ~= Config.ini.global.language then
+		--			if imgui.MenuItem(lng) then
+		--				ChangeLanguage(lng)
+		--				--Config.ini.global.language = lang
+		--			end
+		--		end
+		--	end
+		--end
+		if imgui.BeginMenu('Fps: '..tostring(math.floor(memory.getfloat(0xB7CB50, 4, false)))) then imgui.EndMenu() end
 		imgui.EndMainMenuBar()
 	end
 	imgui.PopFont()
 	imgui.PopStyleVar()
 
+	--imgui.Image(getGameDirectory()..'\\moonloader\\GeekHelper\\files\\anime.png', imgui.ImVec2(589, 782))
+
+	--imgui.ShowCursor = win_state['update'].v
 
 	lua_thread.create(anime)
+	lua_thread.create(ChangeLanguage)
 
 	if win_state['main'].v then
 		imgui.SetNextWindowPos(imgui.ImVec2(sw / 2, sh / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(280, 250), imgui.Cond.FirstUseEver)
 
-		imgui.Begin(fa(0xf121)..u8' GeekHelper', win_state['main'], imgui.WindowFlags.NoResize)
-
+		--imgui.Begin(fa(0xf121)..u8' GeekHelper', win_state['main'], imgui.WindowFlags.NoResize)
+		imgui.Begin(fa(0xf121)..u8(Localization:get('title')..'###MainTitle'), win_state['main'], imgui.WindowFlags.NoResize)
+		
 		if imgui.Button(fa(0xf085)..u8' Настройки', btn_size) then
 			win_state['settings'].v = not win_state['settings'].v
 		end
@@ -1260,6 +1275,7 @@ function imgui.OnDrawFrame()
 		if imgui.Button(fa(0xf043)..u8' Style', btn_size) then
 			win_state['style'].v = not win_state['style'].v
 		end
+
 		if imgui.Button(fa.ICON_PLAY..u8' MP3 Player', btn_size) then
 			win_state['mp3'].v = not win_state['mp3'].v
 		end
@@ -1269,16 +1285,19 @@ function imgui.OnDrawFrame()
 	if win_state['mods'].v then
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(600, 900), imgui.Cond.FirstUseEver)
+
 		imgui.Begin(fa(0xf0ad)..u8' Модификации', win_state['mods'])
 
 		imgui.Checkbox(u8'Стробоскопы', strobesOn)
 		imgui.Checkbox(u8'ChatInfo', chatInfo)
 		imgui.Checkbox(u8'ХП и Броня в цифрах', hparmCout)
+
 		imgui.End()
 	end
 	if win_state['settings'].v then
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(600, 900), imgui.Cond.FirstUseEver)
+		
 		imgui.Begin(fa(0xf085)..u8' Настройки', win_state['settings'])
 
 		imgui.Text('text')
@@ -1305,12 +1324,13 @@ function imgui.OnDrawFrame()
 
 		imgui.RadioButton('radio1', rb, 0)
 		imgui.RadioButton('radio2', rb, 1)
-
+		imgui.Text('radio: '..rb.v)
+		
 		imgui.Combo('combo', c, {'item1', 'item2', 'item3'}, 3)
 
 		imgui.InputText('inputtext', it)
 		imgui.Text('text: '..it.v)
-
+		
 		imgui.DragFloat('dragfloat', df, imgui.ImFloat(0.001), 0, 100, '%.3f', imgui.ImFloat(0.001))
 
 		imgui.SliderFloat('sliderfloat', sf, 0, 100, '%.3f', imgui.ImFloat(0.001))
@@ -1327,42 +1347,14 @@ function imgui.OnDrawFrame()
 		imgui.Text('nextcolumn: ')
 		imgui.ColorEdit4('coloredit4', f4)
 
+		for ind, lng in pairs(Config.lang) do
+			imgui.RadioButton(lng, lang_num, ind - 1)
+		end
+		
 		imgui.NextColumn()
 		imgui.Text('button pressed: '..tostring(pres))
 		imgui.ColorPicker4('colorpicker4', f4)
 
-		imgui.End()
-	end
-	if win_state['style'].v then
-		imgui.Begin(fa(0xf043)..' Style', win_state['style'])
-		imgui.ShowStyleEditor()
-		imgui.End()
-	end
-	if win_state['about'].v then -- окно "о скрипте"
-		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
-		imgui.SetNextWindowSize(imgui.ImVec2(360, 225), imgui.Cond.FirstUseEver)
-		imgui.Begin(fa(0xf06a)..u8(' О скрипте'), win_state['about'], imgui.WindowFlags.NoResize)
-
-		imgui.Text(u8'GeekHelper - игровой помощник')
-		imgui.Text(u8'Разработчики: Oniel & CzarAlex')
-		imgui.Text(u8'Версия скрипта: '..thisScript().version)
-		imgui.Separator()
-		if imgui.Button(u8'VK.Oniel') then
-			sampAddChatMessage("[GeekHelper]{FFFFFF} Сейчас откроется ссылка ВКонтакте.", 0x046D63)
-			print(shell32.ShellExecuteA(nil, 'open', 'https://vk.com/onie1', nil, nil, 1))
-		end
-		imgui.SameLine()
-		if imgui.Button(u8'VK.CzarAlex') then
-			sampAddChatMessage("[GeekHelper]{FFFFFF} Сейчас откроется ссылка ВКонтакте.", 0x046D63)
-			print(shell32.ShellExecuteA(nil, 'open', 'https://vk.com/czar.alex', nil, nil, 1))
-		end
-		imgui.SameLine()
-		if imgui.Button(u8'Перезагрузить скрипт', btn_size) then
-			thisScript():reload()
-		end
-		if imgui.Button(u8'Отключить скрипт', btn_size) then
-			thisScript():unload()
-		end
 		imgui.End()
 	end
 
@@ -1465,6 +1457,39 @@ function imgui.OnDrawFrame()
 		end
 		imgui.PopStyleColor()
 	end
+
+	if win_state['style'].v then
+		imgui.Begin(fa(0xf043)..' Style', win_state['style'])
+		imgui.ShowStyleEditor()
+		imgui.End()
+	end
+	if win_state['about'].v then -- окно "о скрипте"
+		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(360, 225), imgui.Cond.FirstUseEver)
+		imgui.Begin(fa(0xf06a)..u8(' О скрипте'), win_state['about'], imgui.WindowFlags.NoResize)
+
+		imgui.Text(u8'GeekHelper - игровой помощник')
+		imgui.Text(u8'Разработчики: Oniel & CzarAlex')
+		imgui.Text(u8'Версия скрипта: '..thisScript().version)
+		imgui.Separator()
+		if imgui.Button(u8'VK.Oniel') then
+			sampAddChatMessage("[GeekHelper]{FFFFFF} Сейчас откроется ссылка ВКонтакте.", 0x046D63)
+			print(shell32.ShellExecuteA(nil, 'open', 'https://vk.com/onie1', nil, nil, 1))
+		end
+		imgui.SameLine()
+		if imgui.Button(u8'VK.CzarAlex') then
+			sampAddChatMessage("[GeekHelper]{FFFFFF} Сейчас откроется ссылка ВКонтакте.", 0x046D63)
+			print(shell32.ShellExecuteA(nil, 'open', 'https://vk.com/czar.alex', nil, nil, 1))
+		end
+		imgui.SameLine()
+		if imgui.Button(u8'Перезагрузить скрипт', btn_size) then
+			thisScript():reload()
+		end
+		if imgui.Button(u8'Отключить скрипт', btn_size) then
+			thisScript():unload()
+		end
+		imgui.End()
+	end
 	if win_state['update'].v then
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(450, 200), imgui.Cond.FirstUseEver)
@@ -1472,7 +1497,7 @@ function imgui.OnDrawFrame()
 		imgui.Begin(fa(0xf0ed)..u8(' Обновление'), nil, imgui.WindowFlags.NoResize)
 
 		imgui.Text(u8'Обнаружено обновление до версии: '..updatever)
-
+		
 		imgui.Separator()
 
 		imgui.TextWrapped(u8("Для установки обновления необходимо подтверждение пользователя, разработчик настоятельно рекомендует принимать обновления ввиду того, что прошлые версии через определенное время отключаются и более не работают."))
@@ -1500,20 +1525,20 @@ function imgui.OnDrawFrame()
 
 		imgui.End()
 	end
-
 end
+
 function onScriptTerminate(script, quitGame) -- действия при отключении скрипта
 	if script == thisScript() then
 		showCursor(false)
+		bass.BASS_ChannelPlay(aerr, false) -- воспроизводим звук краша
+		lockPlayerControl(false) -- снимаем блок персонажа на всякий
 
-			bass.BASS_ChannelPlay(aerr, false) -- воспроизводим звук краша
-			lockPlayerControl(false) -- снимаем блок персонажа на всякий
-
-			if not reloadScript then -- выводим текст
-				sampAddChatMessage("[GeekHelper]{FFFFFF} Произошла ошибка, скрипт завершил свою работу принудительно.", 0x046D63)
-			end
+		if not reloadScript then -- выводим текст
+			sampAddChatMessage("[GeekHelper]{FFFFFF} Произошла ошибка, скрипт завершил свою работу принудительно.", 0x046D63)
+		end
 	end
 end
+
 function strobes() -- стробоскопы
 	if not isCharOnAnyBike(PLAYER_PED) and not isCharInAnyBoat(PLAYER_PED) and not isCharInAnyHeli(PLAYER_PED) and not isCharInAnyPlane(PLAYER_PED) then
 		if not enableStrobes then
@@ -1521,7 +1546,6 @@ function strobes() -- стробоскопы
 			lua_thread.create(function()
 				vehptr = getCarPointer(storeCarCharIsInNoSave(PLAYER_PED)) + 1440
 				while enableStrobes and isCharInAnyCar(PLAYER_PED) do
-					-- 0 левая, 1 правая фары, 3 задние
 					callMethod(7086336, vehptr, 2, 0, 0, 0)
 					callMethod(7086336, vehptr, 2, 0, 1, 1)
 					wait(150)

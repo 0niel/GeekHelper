@@ -60,7 +60,39 @@ local bNotf, notf = pcall(import, "imgui_notf.lua")
 
 local res, md5 = pcall(require, 'md5')
 assert(res, 'Library md5 not found')
+require "luairc"
 
+IRCLogs = {}
+local ansi_decode={
+  [128]='\208\130',[129]='\208\131',[130]='\226\128\154',[131]='\209\147',[132]='\226\128\158',[133]='\226\128\166',
+  [134]='\226\128\160',[135]='\226\128\161',[136]='\226\130\172',[137]='\226\128\176',[138]='\208\137',[139]='\226\128\185',
+  [140]='\208\138',[141]='\208\140',[142]='\208\139',[143]='\208\143',[144]='\209\146',[145]='\226\128\152',
+  [146]='\226\128\153',[147]='\226\128\156',[148]='\226\128\157',[149]='\226\128\162',[150]='\226\128\147',[151]='\226\128\148',
+  [152]='\194\152',[153]='\226\132\162',[154]='\209\153',[155]='\226\128\186',[156]='\209\154',[157]='\209\156',
+  [158]='\209\155',[159]='\209\159',[160]='\194\160',[161]='\209\142',[162]='\209\158',[163]='\208\136',
+  [164]='\194\164',[165]='\210\144',[166]='\194\166',[167]='\194\167',[168]='\208\129',[169]='\194\169',
+  [170]='\208\132',[171]='\194\171',[172]='\194\172',[173]='\194\173',[174]='\194\174',[175]='\208\135',
+  [176]='\194\176',[177]='\194\177',[178]='\208\134',[179]='\209\150',[180]='\210\145',[181]='\194\181',
+  [182]='\194\182',[183]='\194\183',[184]='\209\145',[185]='\226\132\150',[186]='\209\148',[187]='\194\187',
+  [188]='\209\152',[189]='\208\133',[190]='\209\149',[191]='\209\151'
+}
+local utf8_decode={
+  [128]={[147]='\150',[148]='\151',[152]='\145',[153]='\146',[154]='\130',[156]='\147',[157]='\148',[158]='\132',[160]='\134',[161]='\135',[162]='\149',[166]='\133',[176]='\137',[185]='\139',[186]='\155'},
+  [130]={[172]='\136'},
+  [132]={[150]='\185',[162]='\153'},
+  [194]={[152]='\152',[160]='\160',[164]='\164',[166]='\166',[167]='\167',[169]='\169',[171]='\171',[172]='\172',[173]='\173',[174]='\174',[176]='\176',[177]='\177',[181]='\181',[182]='\182',[183]='\183',[187]='\187'},
+  [208]={[129]='\168',[130]='\128',[131]='\129',[132]='\170',[133]='\189',[134]='\178',[135]='\175',[136]='\163',[137]='\138',[138]='\140',[139]='\142',[140]='\141',[143]='\143',[144]='\192',[145]='\193',[146]='\194',[147]='\195',[148]='\196',
+  [149]='\197',[150]='\198',[151]='\199',[152]='\200',[153]='\201',[154]='\202',[155]='\203',[156]='\204',[157]='\205',[158]='\206',[159]='\207',[160]='\208',[161]='\209',[162]='\210',[163]='\211',[164]='\212',[165]='\213',[166]='\214',
+  [167]='\215',[168]='\216',[169]='\217',[170]='\218',[171]='\219',[172]='\220',[173]='\221',[174]='\222',[175]='\223',[176]='\224',[177]='\225',[178]='\226',[179]='\227',[180]='\228',[181]='\229',[182]='\230',[183]='\231',[184]='\232',
+  [185]='\233',[186]='\234',[187]='\235',[188]='\236',[189]='\237',[190]='\238',[191]='\239'},
+  [209]={[128]='\240',[129]='\241',[130]='\242',[131]='\243',[132]='\244',[133]='\245',[134]='\246',[135]='\247',[136]='\248',[137]='\249',[138]='\250',[139]='\251',[140]='\252',[141]='\253',[142]='\254',[143]='\255',[144]='\161',[145]='\184',
+  [146]='\144',[147]='\131',[148]='\186',[149]='\190',[150]='\179',[151]='\191',[152]='\188',[153]='\154',[154]='\156',[155]='\158',[156]='\157',[158]='\162',[159]='\159'},[210]={[144]='\165',[145]='\180'}
+}
+
+local nmdc = {
+  [36] = '$',
+  [124] = '|',
+}
 
 lfs = require('lfs')
 encoding = require 'encoding'
@@ -75,6 +107,7 @@ local searchBuf = imgui.ImBuffer(256)
 
 
 local win_state = {}
+win_state['chat_settings'] = imgui.ImBool(false)
 win_state['image'] = imgui.ImBool(true)
 win_state['update'] = imgui.ImBool(false)
 win_state['main'] = imgui.ImBool(false)
@@ -126,13 +159,171 @@ notf_type = imgui.ImInt(1)
 
 keyShow = VK_M
 reduceZoom = true
+function AnsiToUtf8(s)
+  local r, b = ''
+  for i = 1, s and s:len() or 0 do
+    b = s:byte(i)
+    if b < 128 then
+      r = r..string.char(b)
+    else
+      if b > 239 then
+        r = r..'\209'..string.char(b - 112)
+      elseif b > 191 then
+        r = r..'\208'..string.char(b - 48)
+      elseif ansi_decode[b] then
+        r = r..ansi_decode[b]
+      else
+        r = r..'_'
+      end
+    end
+  end
+  return r
+end
+function Utf8ToAnsi(s)
+  local a, j, r, b = 0, 0, ''
+  for i = 1, s and s:len() or 0 do
+    b = s:byte(i)
+    if b < 128 then
+      if nmdc[b] then
+        r = r..nmdc[b]
+      else
+        r = r..string.char(b)
+      end
+    elseif a == 2 then
+      a, j = a - 1, b
+    elseif a == 1 then
+      if (utf8_decode[j] or {})[b] then
+        a, r = a - 1, r..utf8_decode[j][b]
+      end
+    elseif b == 226 then
+      a = 2
+    elseif b == 194 or b == 208 or b == 209 or b == 210 then
+      j, a = b, 1
+    else
+      r = r..'_'
+    end
+  end
+  return r
+end
+require("config.SAMPIRC_Config") -- load configuration
+Channel = "#GeekHelper"
+Server = "irc.ircnet.ru"
 
+DebugMode = false
+local s = irc.new{nick = Nick}
+connected = false
+function GetState(var)
+  if var then
+  return "{00FF00}On"
+  else
+  return "{FF0000}Off"
+  end
+end
+function secondThread()
+  while not isSampfuncsLoaded() do
+    wait(1000)
+  end
+  if AutoConnect then
+    connected = true
+  end
+  sampRegisterChatCommand("irc_connection", ircmenu)
+  while true do
+    wait(0)
+    local resultMain, buttonMain, listMain = sampHasDialogRespond(154)
+    if resultMain == true then
+      if buttonMain == 1 then
+        if listMain == 0 then
+          sampShowDialog(1289, "Input", "Ник:", "Ok", "Exit", 1)
+        end
+        if listMain == 1 then
+          sampAddChatMessage("Connecting... (It may hang for a while, but it's normal!)", 0x00ff00)
+          connected = true
+        end
+        if listMain == 2 then
+          sampAddChatMessage("You disconnected", 0xff0000)
+          thisScript():reload()
+        end
+        if listMain == 3 then
+        sampAddChatMessage("Changed value!", -1)
+        irclogs = not irclogs
+        end
+        if listMain == 4 then
+        sampAddChatMessage("Changed value!", -1)
+        AutoConnect = not AutoConnect
+        end
+        if listMain == 5 then
+          sampAddChatMessage("Forceing save...", 0xB9C9BF)
+          saveChanges()
+          sampAddChatMessage("Save complete!", 0x00ff00)
+        end
+        if listMain == 6 then
+          sampShowDialog(1292, "Change value", "Enter 0 to off sound\nSound ID:", "Ok", "Exit", 1)
+        end
+        if listMain == 7 then
+          sampShowDialog(1293, "Change value", "{FF0000}This option may cause performance problems \nIRC Latency:", "Ok", "Exit", 1)
+        end
+        if listMain == 8 then
+        DebugMode = not DebugMode
+        sampAddChatMessage("Debug mode: "..GetState(DebugMode))
+        end
+      end
+      saveChanges()
+    end
+    local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1289)
+    if resultInput == true then
+    saveChanges()
+      if buttonInput == 1 then
+        Nick = stringInput
+        sampAddChatMessage("Now nick: " .. Nick, -1)
+      else sampAddChatMessage("You pressed Exit", -1)
+      end
+    end
+    local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1290)
+    if resultInput == true then
+      if buttonInput == 1 then
+        Server = stringInput
+        sampAddChatMessage("Now server: " .. Server, -1)
+      else sampAddChatMessage("You pressed Exit", -1)
+      end
+    end
+    local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1291)
+    if resultInput == true then
+      if buttonInput == 1 then
+        Channel = stringInput
+        sampAddChatMessage("Now channel: " .. Channel, -1)
+      else sampAddChatMessage("You pressed Exit", -1)
+      end
+    end
+    local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1292)
+    if resultInput == true then
+      if buttonInput == 1 then
+        MessageSound = stringInput
+        sampAddChatMessage("Now message sound ID: " .. MessageSound, -1)
+      else sampAddChatMessage("You pressed Exit", -1)
+      end
+    end
+    local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1293)
+    if resultInput == true then
+      if buttonInput == 1 then
+        IRCLatency = stringInput
+        sampAddChatMessage("Now IRC Latency: " .. IRCLatency, -1)
+      else sampAddChatMessage("You pressed Exit", -1)
+      end
+    end
+  end
+end
+function saveChanges()
+  file = io.open("moonloader/config/SAMPIRC_Config.lua", "w")
+  StrforSave = string.format('Nick = "%s"\nirclogs = %s\nAutoConnect = %s\nMessageSound = %d\nIRCLatency = %d',Nick, tostring(irclogs), tostring(AutoConnect), MessageSound, IRCLatency)
+  file:write(StrforSave)
+  file:close()
+end
 function doesDirExist(dir)
 	return os.rename(dir, dir)
 end
 
 function SCM(text)
-	sampAddChatMessage("[GeekHelper]" .. text, 0x046D63)
+	sampAddChatMessage("[GeekHelper] {FFFFFF}" .. text, 0x046D63)
 end
 
 ini = {}
@@ -616,7 +807,7 @@ function Style(name)
 		imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered] = imgui.ImVec4(1.00, 0.60, 0.00, 1.00)
 		imgui.GetStyle().Colors[imgui.Col.TextSelectedBg]       = imgui.ImVec4(0.00, 0.00, 1.00, 0.35)
 		imgui.GetStyle().Colors[imgui.Col.ModalWindowDarkening] = imgui.ImVec4(0.20, 0.20, 0.20, 0.35)
-	
+
 	elseif name == 'Indigo' then
 		imgui.GetStyle().Colors[imgui.Col.Text]                 = imgui.ImVec4(0.86, 0.93, 0.89, 0.78)
 		imgui.GetStyle().Colors[imgui.Col.TextDisabled]         = imgui.ImVec4(0.92, 0.18, 0.29, 0.78)
@@ -968,8 +1159,11 @@ patch()
 
 
 function main()
+
 	if not isSampfuncsLoaded() or not isSampLoaded() then return end
 	while not isSampAvailable() do wait(0) end
+	wait(1000)
+	local thread1 = lua_thread.create(secondThread, false)
 	print("Начинаем подгрузку скрипта и его составляющих")
 	sampAddChatMessage("[GeekHelper] {FFFFFF}Скрипт подгружен в игру, версия: {00C2BB}"..thisScript().version.."{ffffff}, начинаем инициализацию.", 0x046D63)
 	print("Начинаем проверку обновлений.")
@@ -990,6 +1184,37 @@ function main()
 	aerr = bass.BASS_StreamCreateFile(false, "moonloader/GeekHelper/audio/crash.mp3", 0, 0, 0) -- краш звук
 	bass.BASS_ChannelSetAttribute(aerr, BASS_ATTRIB_VOL, 3.0)
 	------------------------------------------------------------
+	local sleep = require "socket".sleep
+	sampRegisterChatCommand("irc", ircsend)
+	sampRegisterChatCommand("irc_pm", ircquery)
+	sampRegisterChatCommand("irc_raw", ircraw)
+	s:hook("OnChat", function(user, channel, message)
+	msgStr = Utf8ToAnsi(("[Chat] %s: %s"):format(user.nick, message))
+	sampAddChatMessage(msgStr, 0xffff00)
+	if irclogs then
+		table.insert(IRCLogs, #IRCLogs + 1, "["..os.date("%H:%M").."] "..msgStr)
+		fileLog = io.open("moonloader/IRCLOG.log", "w")
+		for i = 1, #IRCLogs do
+			fileLog:write(IRCLogs[i].."\n")
+		end
+		fileLog:close()
+	end
+	addOneOffSound(0.0, 0.0, 0.0, 1054)
+	end)
+	s:hook("OnRaw", function(line)
+	if DebugMode then
+		msgStrs = Utf8ToAnsi("[IRC] RAW: "..line)
+		sampAddChatMessage(msgStrs, 0xffff00)
+	end
+	end)
+	s:connect("irc.ircnet.ru")
+	SCM("Успешно подключились к чату!")
+	s:send("NICK %s", Nick)
+	wait(2500)
+	sampAddChatMessage("[Info] You can write messages with command - /irc <message> or /irc_pm <nick> <message> to write private message." , 0xffff00)
+	s:join("#GeekHelper")
+
+
 	Config:Load()
 	InitializeLocalizations()
 
@@ -998,14 +1223,35 @@ function main()
 
 	while true do
 		imgui.Process = win_state['main'].v or win_state['mp3_informer'].v
+		wait(IRCLatency)
+		s:think()
 		if hparmCout.v then
 			hparmRender()
 		end
 		wait(0)
 	end
-																														   
+
+end
+function ircsend(param)
+	sampAddChatMessage(u8"[ЧАТ]: "..param, 0xffff00)
+	sendstr = AnsiToUtf8(param)
+	s:sendChat(Channel, sendstr)
 end
 
+function ircquery(param)
+	nick_send, msg = string.match(param, "^(%S*)%s(.*)$")
+	sampAddChatMessage("[IRC] [PM Send]: "..tostring(nick_send).." "..tostring(msg), 0xffff00)
+	sendstr = AnsiToUtf8(string.format("PRIVMSG %s :%s", nick_send, msg))
+	s:send(sendstr)
+end
+function ircraw(param)
+	sampAddChatMessage("[IRC] [RAW SEND]: "..param, 0xffff00)
+	sendstr = AnsiToUtf8(param)
+	s:send("%s", sendstr)
+end
+function ircmenu()
+	sampShowDialog(154, "SAMPIrcClient Menu | Connected: {0000FF}"..GetState(connected), string.format("Nickname: %s \n{00ff00}Connect\n{ff0000}Disconnect\nLogging: {FF0000}%s\nAuto connect: {FF0000}%s\nForce save settings\nMessage Sound: {FF0000}%d\nIRC Latency: {FF0000}%d\nDebug: {FF0000}%s", Nick, GetState(irclogs), GetState(AutoConnect), MessageSound, IRCLatency, GetState(DebugMode)), "Select", "Exit", 2)
+end
 function hparmRender()
 	useRenderCommands(true) -- use lua render
 	setTextCentre(true) -- set text centered
@@ -1159,14 +1405,14 @@ img = imgui.CreateTextureFromFile(getGameDirectory()..'\\moonloader\\GeekHelper\
 function anime()
 	w, h = getScreenResolution()
 	aw, ah = 313, 320
-	
+
 	imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0, 0, 0, 0))
 	imgui.SetNextWindowPos(imgui.ImVec2(0, h - ah))
-	
+
 	imgui.Begin('', win_state['image'], imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoMove + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoScrollWithMouse + imgui.WindowFlags.NoCollapse + imgui.WindowFlags.AlwaysAutoResize)
 
 	imgui.Image(img, imgui.ImVec2(aw, ah))
-	
+
 	imgui.End()
 
 	imgui.PopStyleColor()
@@ -1270,7 +1516,7 @@ function imgui.OnDrawFrame()
 
 		--imgui.Begin(fa(0xf121)..u8' GeekHelper', win_state['main'], imgui.WindowFlags.NoResize)
 		imgui.Begin(fa(0xf121)..u8(Localization:get('title')..'###MainTitle'), win_state['main'], imgui.WindowFlags.NoResize)
-		
+
 		if imgui.Button(fa(0xf085)..u8' Настройки', btn_size) then
 			win_state['settings'].v = not win_state['settings'].v
 		end
@@ -1290,6 +1536,9 @@ function imgui.OnDrawFrame()
 		if imgui.Button(fa.ICON_PLAY..u8' MP3 Player', btn_size) then
 			win_state['mp3'].v = not win_state['mp3'].v
 		end
+		if imgui.Button(u8' Chat Settings', btn_size) then
+			win_state['chat_settings'].v = not win_state['chat_settings'].v
+		end
 
 		imgui.End()
 	end
@@ -1308,7 +1557,7 @@ function imgui.OnDrawFrame()
 	if win_state['settings'].v then
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(600, 900), imgui.Cond.FirstUseEver)
-		
+
 		imgui.Begin(fa(0xf085)..u8' Настройки', win_state['settings'])
 
 		imgui.Text('text')
@@ -1336,12 +1585,12 @@ function imgui.OnDrawFrame()
 		imgui.RadioButton('radio1', rb, 0)
 		imgui.RadioButton('radio2', rb, 1)
 		imgui.Text('radio: '..rb.v)
-		
+
 		imgui.Combo('combo', c, {'item1', 'item2', 'item3'}, 3)
 
 		imgui.InputText('inputtext', it)
 		imgui.Text('text: '..it.v)
-		
+
 		imgui.DragFloat('dragfloat', df, imgui.ImFloat(0.001), 0, 100, '%.3f', imgui.ImFloat(0.001))
 
 		imgui.SliderFloat('sliderfloat', sf, 0, 100, '%.3f', imgui.ImFloat(0.001))
@@ -1361,14 +1610,19 @@ function imgui.OnDrawFrame()
 		for ind, lng in pairs(Config.lang) do
 			imgui.RadioButton(lng, lang_num, ind - 1)
 		end
-		
+
 		imgui.NextColumn()
 		imgui.Text('button pressed: '..tostring(pres))
 		imgui.ColorPicker4('colorpicker4', f4)
 
 		imgui.End()
 	end
+	if win_state['chat_settings'].v then
+		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(600, 900), imgui.Cond.FirstUseEver)
 
+		imgui.End()
+	end
 	if win_state['mp3'].v then -- окно "mp3 player"
 		local musiclist = getMusicList()
 		local sw, sh = getScreenResolution()
@@ -1522,7 +1776,7 @@ function imgui.OnDrawFrame()
 		imgui.Begin(fa(0xf0ed)..u8(' Обновление'), nil, imgui.WindowFlags.NoResize)
 
 		imgui.Text(u8'Обнаружено обновление до версии: '..updatever)
-		
+
 		imgui.Separator()
 
 		imgui.TextWrapped(u8("Для установки обновления необходимо подтверждение пользователя, разработчик настоятельно рекомендует принимать обновления ввиду того, что прошлые версии через определенное время отключаются и более не работают."))

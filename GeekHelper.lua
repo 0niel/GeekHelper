@@ -116,6 +116,8 @@ s = imgui.ImBool(false)
 f4 = imgui.ImFloat4(0, 0, 0, 0)
 pres = 0
 
+musicpath_mp3 = imgui.ImBuffer(256)
+
 lang_num = imgui.ImInt(1)
 
 notf_text = imgui.ImBuffer(256)
@@ -124,6 +126,10 @@ notf_type = imgui.ImInt(1)
 
 keyShow = VK_M
 reduceZoom = true
+
+function doesDirExist(dir)
+	return os.rename(dir, dir)
+end
 
 function SCM(text)
 	sampAddChatMessage("[GeekHelper]" .. text, 0x046D63)
@@ -204,7 +210,8 @@ local Config = {
 			name = 'Midnight'
 		},
 		global = {
-			language = 'ru'
+			language = 'ru',
+			musicpath = ''
 		}
 	},
 	name = 'settings.ini',
@@ -1000,19 +1007,19 @@ function main()
 end
 
 function hparmRender()
-		useRenderCommands(true) -- use lua render
+	useRenderCommands(true) -- use lua render
+	setTextCentre(true) -- set text centered
+	setTextScale(0.2, 0.5) -- x y size
+	setTextColour(255, 255, 255, 255) -- r, g, b, a
+	setTextEdge(1, 0, 0, 0, 255) -- outline size, r , g, b, a
+	displayTextWithNumber(578.0, 68.5, 'NUMBER', getCharHealth(PLAYER_PED))
+	if getCharArmour(PLAYER_PED) > 0 then
 		setTextCentre(true) -- set text centered
 		setTextScale(0.2, 0.5) -- x y size
-		setTextColour(255--[[r]], 255--[[g]], 255--[[b]], 255--[[a]])
-		setTextEdge(1--[[outline size]], 0--[[r]], 0--[[g]], 0--[[b]], 255--[[a]])
-		displayTextWithNumber(578.0, 68.5, 'NUMBER', getCharHealth(PLAYER_PED))
-		if getCharArmour(PLAYER_PED) > 0 then
-			setTextCentre(true) -- set text centered
-			setTextScale(0.2, 0.5) -- x y size
-			setTextColour(255--[[r]], 255--[[g]], 255--[[b]], 255--[[a]])
-			setTextEdge(1--[[outline size]], 0--[[r]], 0--[[g]], 0--[[b]], 255--[[a]])
-			displayTextWithNumber(578.0, 47.0, 'NUMBER', getCharArmour(PLAYER_PED))
-		end
+		setTextColour(255, 255, 255, 255) -- r, g, b, a
+		setTextEdge(1, 0, 0, 0, 255) -- outline size, r , g, b, a
+		displayTextWithNumber(578.0, 47.0, 'NUMBER', getCharArmour(PLAYER_PED))
+	end
 end
 
 function mainmenu()
@@ -1021,7 +1028,11 @@ end
 
 function getMusicList()
 	local files = {}
-	local handleFile, nameFile = findFirstFile('moonloader/GeekHelper/audio/*.mp3')
+	local path = nil
+	if Config.ini.global.musicpath ~= '' then path = Config.ini.global.musicpath
+	elseif musicpath_mp3.v ~= '' then path = musicpath_mp3.v
+	else path = getGameDirectory()..'\\moonloader\\GeekHelper\\audio\\MP3\\' end
+	local handleFile, nameFile = findFirstFile(path..'*.mp3')
 	while nameFile do
 		if handleFile then
 			if not nameFile then
@@ -1365,11 +1376,26 @@ function imgui.OnDrawFrame()
 		imgui.SetNextWindowSize(imgui.ImVec2(810, 310), imgui.Cond.FirstUseEver)
 		imgui.Begin(u8'MP3 Player', win_state['mp3'], imgui.WindowFlags.NoResize)
 
-
+		local path = nil
 		if imgui.Button(u8'Музыка оффлайн') then selected2 = 1 end
 		imgui.SameLine()
 		if imgui.Button(u8'Музыка онлайн') then selected2 = 2 end
+		if selected2 == 1 then
+			imgui.SameLine()
+			if imgui.Button(u8'Открыть папку') then
+				if not doesDirExist(path) then
+					os.execute('mkdir "'..path..'"')
+				end
+				os.execute('explorer "'..path..'"')
+			end
+			imgui.SameLine()
+			imgui.InputText(u8'Своя папка', musicpath_mp3)
+		end
 		imgui.Separator()
+
+		if Config.ini.global.musicpath ~= '' then path = Config.ini.global.musicpath
+		elseif musicpath_mp3.v ~= '' then path = musicpath_mp3.v
+		else path = getGameDirectory()..'\\moonloader\\GeekHelper\\audio\\MP3\\' end
 
 		if selected2 == 1 then
 			imgui.BeginChild('##left', imgui.ImVec2(350, 0), true)
@@ -1391,7 +1417,8 @@ function imgui.OnDrawFrame()
 					imgui.SameLine(160)
 					if imgui.Button(u8'Включить') then
 						if playsound ~= nil then setAudioStreamState(playsound, as_action.STOP) playsound = nil end
-						playsound = loadAudioStream('moonloader/GeekHelper/audio/MP3/'..name)
+						playsound = loadAudioStream(path..name)
+						print(path..name)
 						setAudioStreamState(playsound, as_action.PLAY)
 						setAudioStreamVolume(playsound, math.floor(volume.v))
 						informer_song = name
@@ -1408,8 +1435,6 @@ function imgui.OnDrawFrame()
 					if imgui.Button(fa.ICON_PAUSE, imgui.ImVec2(30, 30)) then if playsound ~= nil then setAudioStreamState(playsound, as_action.PAUSE) end end
 					imgui.SameLine(nil, 3)
 					if imgui.Button(fa.ICON_PLAY, imgui.ImVec2(30, 30)) then if playsound ~= nil then setAudioStreamState(playsound, as_action.RESUME) end end
-
-
 				end
 			end
 			imgui.EndChild()

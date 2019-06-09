@@ -60,6 +60,7 @@ local bNotf, notf = pcall(import, "imgui_notf.lua")
 
 local res, md5 = pcall(require, 'md5')
 assert(res, 'Library md5 not found')
+
 require "luairc"
 
 IRCLogs = {}
@@ -94,6 +95,7 @@ local nmdc = {
   [124] = '|',
 }
 
+
 lfs = require('lfs')
 encoding = require 'encoding'
 encoding.default = 'CP1251'
@@ -117,6 +119,7 @@ win_state['style'] = imgui.ImBool(false)
 win_state['about'] = imgui.ImBool(false)
 win_state['mp3'] = imgui.ImBool(false)
 win_state['mp3_informer'] = imgui.ImBool(false)
+win_state['chat'] = imgui.ImBool(false)
 
 ffi.cdef[[
 	short GetKeyState(int nVirtKey);
@@ -149,9 +152,40 @@ s = imgui.ImBool(false)
 f4 = imgui.ImFloat4(0, 0, 0, 0)
 pres = 0
 
-musicpath_mp3 = imgui.ImBuffer(256)
+test_chat_data = decodeJson([[
+[
+	{
+		"username": "Alex",
+		"status": "user",
+		"message": "hello czar",
+		"time": "09:03:12"
+	},
+	{
+		"username": "Czar",
+		"status": "vip",
+		"message": "hello alex",
+		"time": "09:03:16"
+	},
+	{
+		"username": "Lex",
+		"status": "helper",
+		"message": "lol",
+		"time": "09:03:23"
+	},
+	{
+		"username": "Kreyn",
+		"status": "developer",
+		"message": "test mess",
+		"time": "09:03:24"
+	}
+]
+]])
+chat_text = imgui.ImBuffer(256)
 
+musicpath_mp3 = imgui.ImBuffer(256)
 lang_num = imgui.ImInt(1)
+fpsUnlock = imgui.ImBool(false)
+fpsChange = fpsUnlock.v
 
 notf_text = imgui.ImBuffer(256)
 notf_duration = imgui.ImInt(1)
@@ -159,51 +193,52 @@ notf_type = imgui.ImInt(1)
 
 keyShow = VK_M
 reduceZoom = true
+
 function AnsiToUtf8(s)
-  local r, b = ''
-  for i = 1, s and s:len() or 0 do
-    b = s:byte(i)
-    if b < 128 then
-      r = r..string.char(b)
-    else
-      if b > 239 then
-        r = r..'\209'..string.char(b - 112)
-      elseif b > 191 then
-        r = r..'\208'..string.char(b - 48)
-      elseif ansi_decode[b] then
-        r = r..ansi_decode[b]
-      else
-        r = r..'_'
-      end
-    end
-  end
-  return r
+	local r, b = ''
+	for i = 1, s and s:len() or 0 do
+		b = s:byte(i)
+		if b < 128 then
+			r = r..string.char(b)
+		else
+			if b > 239 then
+				r = r..'\209'..string.char(b - 112)
+			elseif b > 191 then
+				r = r..'\208'..string.char(b - 48)
+			elseif ansi_decode[b] then
+				r = r..ansi_decode[b]
+			else
+				r = r..'_'
+			end
+		end
+	end
+	return r
 end
 function Utf8ToAnsi(s)
-  local a, j, r, b = 0, 0, ''
-  for i = 1, s and s:len() or 0 do
-    b = s:byte(i)
-    if b < 128 then
-      if nmdc[b] then
-        r = r..nmdc[b]
-      else
-        r = r..string.char(b)
-      end
-    elseif a == 2 then
-      a, j = a - 1, b
-    elseif a == 1 then
-      if (utf8_decode[j] or {})[b] then
-        a, r = a - 1, r..utf8_decode[j][b]
-      end
-    elseif b == 226 then
-      a = 2
-    elseif b == 194 or b == 208 or b == 209 or b == 210 then
-      j, a = b, 1
-    else
-      r = r..'_'
-    end
-  end
-  return r
+	local a, j, r, b = 0, 0, ''
+	for i = 1, s and s:len() or 0 do
+		b = s:byte(i)
+		if b < 128 then
+			if nmdc[b] then
+				r = r..nmdc[b]
+			else
+				r = r..string.char(b)
+			end
+		elseif a == 2 then
+			a, j = a - 1, b
+		elseif a == 1 then
+			if (utf8_decode[j] or {})[b] then
+				a, r = a - 1, r..utf8_decode[j][b]
+			end
+		elseif b == 226 then
+			a = 2
+		elseif b == 194 or b == 208 or b == 209 or b == 210 then
+			j, a = b, 1
+		else
+			r = r..'_'
+		end
+	end
+	return r
 end
 require("config.SAMPIRC_Config") -- load configuration
 Channel = "#GeekHelper"
@@ -213,117 +248,154 @@ DebugMode = false
 local s = irc.new{nick = Nick}
 connected = false
 function GetState(var)
-  if var then
-  return "{00FF00}On"
-  else
-  return "{FF0000}Off"
-  end
+	if var then
+	return "{00FF00}On"
+	else
+	return "{FF0000}Off"
+	end
 end
 function secondThread()
-  while not isSampfuncsLoaded() do
-    wait(1000)
-  end
-  if AutoConnect then
-    connected = true
-  end
-  sampRegisterChatCommand("irc_connection", ircmenu)
-  while true do
-    wait(0)
-    local resultMain, buttonMain, listMain = sampHasDialogRespond(154)
-    if resultMain == true then
-      if buttonMain == 1 then
-        if listMain == 0 then
-          sampShowDialog(1289, "Input", "Ник:", "Ok", "Exit", 1)
-        end
-        if listMain == 1 then
-          sampAddChatMessage("Connecting... (It may hang for a while, but it's normal!)", 0x00ff00)
-          connected = true
-        end
-        if listMain == 2 then
-          sampAddChatMessage("You disconnected", 0xff0000)
-          thisScript():reload()
-        end
-        if listMain == 3 then
-        sampAddChatMessage("Changed value!", -1)
-        irclogs = not irclogs
-        end
-        if listMain == 4 then
-        sampAddChatMessage("Changed value!", -1)
-        AutoConnect = not AutoConnect
-        end
-        if listMain == 5 then
-          sampAddChatMessage("Forceing save...", 0xB9C9BF)
-          saveChanges()
-          sampAddChatMessage("Save complete!", 0x00ff00)
-        end
-        if listMain == 6 then
-          sampShowDialog(1292, "Change value", "Enter 0 to off sound\nSound ID:", "Ok", "Exit", 1)
-        end
-        if listMain == 7 then
-          sampShowDialog(1293, "Change value", "{FF0000}This option may cause performance problems \nIRC Latency:", "Ok", "Exit", 1)
-        end
-        if listMain == 8 then
-        DebugMode = not DebugMode
-        sampAddChatMessage("Debug mode: "..GetState(DebugMode))
-        end
-      end
-      saveChanges()
-    end
-    local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1289)
-    if resultInput == true then
-    saveChanges()
-      if buttonInput == 1 then
-        Nick = stringInput
-        sampAddChatMessage("Now nick: " .. Nick, -1)
-      else sampAddChatMessage("You pressed Exit", -1)
-      end
-    end
-    local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1290)
-    if resultInput == true then
-      if buttonInput == 1 then
-        Server = stringInput
-        sampAddChatMessage("Now server: " .. Server, -1)
-      else sampAddChatMessage("You pressed Exit", -1)
-      end
-    end
-    local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1291)
-    if resultInput == true then
-      if buttonInput == 1 then
-        Channel = stringInput
-        sampAddChatMessage("Now channel: " .. Channel, -1)
-      else sampAddChatMessage("You pressed Exit", -1)
-      end
-    end
-    local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1292)
-    if resultInput == true then
-      if buttonInput == 1 then
-        MessageSound = stringInput
-        sampAddChatMessage("Now message sound ID: " .. MessageSound, -1)
-      else sampAddChatMessage("You pressed Exit", -1)
-      end
-    end
-    local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1293)
-    if resultInput == true then
-      if buttonInput == 1 then
-        IRCLatency = stringInput
-        sampAddChatMessage("Now IRC Latency: " .. IRCLatency, -1)
-      else sampAddChatMessage("You pressed Exit", -1)
-      end
-    end
-  end
+	while not isSampfuncsLoaded() do
+		wait(1000)
+	end
+	if AutoConnect then
+		connected = true
+	end
+	sampRegisterChatCommand("irc_connection", ircmenu)
+	while true do
+		wait(0)
+		local resultMain, buttonMain, listMain = sampHasDialogRespond(154)
+		if resultMain == true then
+			if buttonMain == 1 then
+				if listMain == 0 then
+					sampShowDialog(1289, "Input", "Ник:", "Ok", "Exit", 1)
+				end
+				if listMain == 1 then
+					sampAddChatMessage("Connecting... (It may hang for a while, but it's normal!)", 0x00ff00)
+					connected = true
+				end
+				if listMain == 2 then
+					sampAddChatMessage("You disconnected", 0xff0000)
+					thisScript():reload()
+				end
+				if listMain == 3 then
+				sampAddChatMessage("Changed value!", -1)
+				irclogs = not irclogs
+				end
+				if listMain == 4 then
+				sampAddChatMessage("Changed value!", -1)
+				AutoConnect = not AutoConnect
+				end
+				if listMain == 5 then
+					sampAddChatMessage("Forceing save...", 0xB9C9BF)
+					saveChanges()
+					sampAddChatMessage("Save complete!", 0x00ff00)
+				end
+				if listMain == 6 then
+					sampShowDialog(1292, "Change value", "Enter 0 to off sound\nSound ID:", "Ok", "Exit", 1)
+				end
+				if listMain == 7 then
+					sampShowDialog(1293, "Change value", "{FF0000}This option may cause performance problems \nIRC Latency:", "Ok", "Exit", 1)
+				end
+				if listMain == 8 then
+				DebugMode = not DebugMode
+				sampAddChatMessage("Debug mode: "..GetState(DebugMode))
+				end
+			end
+			saveChanges()
+		end
+		local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1289)
+		if resultInput == true then
+		saveChanges()
+			if buttonInput == 1 then
+				Nick = stringInput
+				sampAddChatMessage("Now nick: " .. Nick, -1)
+			else sampAddChatMessage("You pressed Exit", -1)
+			end
+		end
+		local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1290)
+		if resultInput == true then
+			if buttonInput == 1 then
+				Server = stringInput
+				sampAddChatMessage("Now server: " .. Server, -1)
+			else sampAddChatMessage("You pressed Exit", -1)
+			end
+		end
+		local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1291)
+		if resultInput == true then
+			if buttonInput == 1 then
+				Channel = stringInput
+				sampAddChatMessage("Now channel: " .. Channel, -1)
+			else sampAddChatMessage("You pressed Exit", -1)
+			end
+		end
+		local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1292)
+		if resultInput == true then
+			if buttonInput == 1 then
+				MessageSound = stringInput
+				sampAddChatMessage("Now message sound ID: " .. MessageSound, -1)
+			else sampAddChatMessage("You pressed Exit", -1)
+			end
+		end
+		local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1293)
+		if resultInput == true then
+			if buttonInput == 1 then
+				IRCLatency = stringInput
+				sampAddChatMessage("Now IRC Latency: " .. IRCLatency, -1)
+			else sampAddChatMessage("You pressed Exit", -1)
+			end
+		end
+	end
 end
 function saveChanges()
-  file = io.open("moonloader/config/SAMPIRC_Config.lua", "w")
-  StrforSave = string.format('Nick = "%s"\nirclogs = %s\nAutoConnect = %s\nMessageSound = %d\nIRCLatency = %d',Nick, tostring(irclogs), tostring(AutoConnect), MessageSound, IRCLatency)
-  file:write(StrforSave)
-  file:close()
+	file = io.open("moonloader/config/SAMPIRC_Config.lua", "w")
+	StrforSave = string.format('Nick = "%s"\nirclogs = %s\nAutoConnect = %s\nMessageSound = %d\nIRCLatency = %d',Nick, tostring(irclogs), tostring(AutoConnect), MessageSound, IRCLatency)
+	file:write(StrforSave)
+	file:close()
 end
+
+function imgui.TextColoredRGB(string)
+    local style = imgui.GetStyle()
+    local colors = style.Colors
+    local clr = imgui.Col
+
+    local function color_imvec4(color)
+        if color:upper() == 'SSSSSS' then return colors[clr.Text] end
+        local color = type(color) == 'number' and ('%X'):format(color):upper() or color:upper()
+        local rgb = {}
+        for i = 1, #color/2 do rgb[#rgb+1] = tonumber(color:sub(2*i-1, 2*i), 16) end
+        return imgui.ImVec4(rgb[1]/255, rgb[2]/255, rgb[3]/255, rgb[4] and rgb[4]/255 or colors[clr.Text].w)
+    end
+
+    local function render_text(string)
+        local text, color = {}, {}
+        local m = 1
+        while string:find('{......}') do
+            local n, k = string:find('{......}')
+            text[#text], text[#text+1] = string:sub(m, n-1), string:sub(k+1, #string)
+            color[#color+1] = color_imvec4(string:sub(n+1, k-1))
+            local t1, t2 = string:sub(1, n-1), string:sub(k+1, #string)
+            string = t1..t2
+            m = k-7
+        end
+        if text[0] then
+            for i, _ in ipairs(text) do
+                imgui.TextColored(color[i] or colors[clr.Text], u8(text[i]))
+                imgui.SameLine(nil, 0)
+            end
+            imgui.NewLine()
+        else imgui.Text(u8(string)) end
+    end
+
+    render_text(string)
+end
+
 function doesDirExist(dir)
 	return os.rename(dir, dir)
 end
 
 function SCM(text)
-	sampAddChatMessage("[GeekHelper] {FFFFFF}" .. text, 0x046D63)
+	sampAddChatMessage("[GeekHelper]" .. text, 0x046D63)
 end
 
 ini = {}
@@ -807,7 +879,7 @@ function Style(name)
 		imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered] = imgui.ImVec4(1.00, 0.60, 0.00, 1.00)
 		imgui.GetStyle().Colors[imgui.Col.TextSelectedBg]       = imgui.ImVec4(0.00, 0.00, 1.00, 0.35)
 		imgui.GetStyle().Colors[imgui.Col.ModalWindowDarkening] = imgui.ImVec4(0.20, 0.20, 0.20, 0.35)
-
+	
 	elseif name == 'Indigo' then
 		imgui.GetStyle().Colors[imgui.Col.Text]                 = imgui.ImVec4(0.86, 0.93, 0.89, 0.78)
 		imgui.GetStyle().Colors[imgui.Col.TextDisabled]         = imgui.ImVec4(0.92, 0.18, 0.29, 0.78)
@@ -1156,10 +1228,7 @@ function patch()
 end
 patch()
 
-
-
 function main()
-
 	if not isSampfuncsLoaded() or not isSampLoaded() then return end
 	while not isSampAvailable() do wait(0) end
 	wait(1000)
@@ -1214,12 +1283,10 @@ function main()
 	sampAddChatMessage("[Info] You can write messages with command - /irc <message> or /irc_pm <nick> <message> to write private message." , 0xffff00)
 	s:join("#GeekHelper")
 
-
 	Config:Load()
 	InitializeLocalizations()
 
 	if wasKeyPressed(key.VK_H) and not sampIsChatInputActive() and not sampIsDialogActive() and strobesOn.v then strobes() end -- стробоскопы на H, не делал на гудок ибо не хочу
-
 
 	while true do
 		imgui.Process = win_state['main'].v or win_state['mp3_informer'].v
@@ -1228,10 +1295,16 @@ function main()
 		if hparmCout.v then
 			hparmRender()
 		end
+		if fpsChange ~= fpsUnlock.v then
+			if fpsUnlock.v then writeMemory(12677196, 1, 60, false)
+			else writeMemory(12677196, 1, 30, false) end
+			fpsChange = fpsUnlock.v
+		end
 		wait(0)
 	end
-
+																														   
 end
+
 function ircsend(param)
 	sampAddChatMessage(u8"[ЧАТ]: "..param, 0xffff00)
 	sendstr = AnsiToUtf8(param)
@@ -1252,6 +1325,7 @@ end
 function ircmenu()
 	sampShowDialog(154, "SAMPIrcClient Menu | Connected: {0000FF}"..GetState(connected), string.format("Nickname: %s \n{00ff00}Connect\n{ff0000}Disconnect\nLogging: {FF0000}%s\nAuto connect: {FF0000}%s\nForce save settings\nMessage Sound: {FF0000}%d\nIRC Latency: {FF0000}%d\nDebug: {FF0000}%s", Nick, GetState(irclogs), GetState(AutoConnect), MessageSound, IRCLatency, GetState(DebugMode)), "Select", "Exit", 2)
 end
+
 function hparmRender()
 	useRenderCommands(true) -- use lua render
 	setTextCentre(true) -- set text centered
@@ -1405,14 +1479,14 @@ img = imgui.CreateTextureFromFile(getGameDirectory()..'\\moonloader\\GeekHelper\
 function anime()
 	w, h = getScreenResolution()
 	aw, ah = 313, 320
-
+	
 	imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0, 0, 0, 0))
 	imgui.SetNextWindowPos(imgui.ImVec2(0, h - ah))
-
+	
 	imgui.Begin('', win_state['image'], imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoMove + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoScrollWithMouse + imgui.WindowFlags.NoCollapse + imgui.WindowFlags.AlwaysAutoResize)
 
 	imgui.Image(img, imgui.ImVec2(aw, ah))
-
+	
 	imgui.End()
 
 	imgui.PopStyleColor()
@@ -1516,7 +1590,7 @@ function imgui.OnDrawFrame()
 
 		--imgui.Begin(fa(0xf121)..u8' GeekHelper', win_state['main'], imgui.WindowFlags.NoResize)
 		imgui.Begin(fa(0xf121)..u8(Localization:get('title')..'###MainTitle'), win_state['main'], imgui.WindowFlags.NoResize)
-
+		
 		if imgui.Button(fa(0xf085)..u8' Настройки', btn_size) then
 			win_state['settings'].v = not win_state['settings'].v
 		end
@@ -1536,6 +1610,11 @@ function imgui.OnDrawFrame()
 		if imgui.Button(fa.ICON_PLAY..u8' MP3 Player', btn_size) then
 			win_state['mp3'].v = not win_state['mp3'].v
 		end
+
+		if imgui.Button(fa(0xf0e0)..u8' Чат', btn_size) then
+			win_state['chat'].v = not win_state['chat'].v
+		end
+
 		if imgui.Button(u8' Chat Settings', btn_size) then
 			win_state['chat_settings'].v = not win_state['chat_settings'].v
 		end
@@ -1551,13 +1630,14 @@ function imgui.OnDrawFrame()
 		imgui.Checkbox(u8'Стробоскопы', strobesOn)
 		imgui.Checkbox(u8'ChatInfo', chatInfo)
 		imgui.Checkbox(u8'ХП и Броня в цифрах', hparmCout)
+		imgui.Checkbox(u8'FPS Unlock', fpsUnlock)
 
 		imgui.End()
 	end
 	if win_state['settings'].v then
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(600, 900), imgui.Cond.FirstUseEver)
-
+		
 		imgui.Begin(fa(0xf085)..u8' Настройки', win_state['settings'])
 
 		imgui.Text('text')
@@ -1585,12 +1665,12 @@ function imgui.OnDrawFrame()
 		imgui.RadioButton('radio1', rb, 0)
 		imgui.RadioButton('radio2', rb, 1)
 		imgui.Text('radio: '..rb.v)
-
+		
 		imgui.Combo('combo', c, {'item1', 'item2', 'item3'}, 3)
 
 		imgui.InputText('inputtext', it)
 		imgui.Text('text: '..it.v)
-
+		
 		imgui.DragFloat('dragfloat', df, imgui.ImFloat(0.001), 0, 100, '%.3f', imgui.ImFloat(0.001))
 
 		imgui.SliderFloat('sliderfloat', sf, 0, 100, '%.3f', imgui.ImFloat(0.001))
@@ -1610,19 +1690,14 @@ function imgui.OnDrawFrame()
 		for ind, lng in pairs(Config.lang) do
 			imgui.RadioButton(lng, lang_num, ind - 1)
 		end
-
+		
 		imgui.NextColumn()
 		imgui.Text('button pressed: '..tostring(pres))
 		imgui.ColorPicker4('colorpicker4', f4)
 
 		imgui.End()
 	end
-	if win_state['chat_settings'].v then
-		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
-		imgui.SetNextWindowSize(imgui.ImVec2(600, 900), imgui.Cond.FirstUseEver)
 
-		imgui.End()
-	end
 	if win_state['mp3'].v then -- окно "mp3 player"
 		local musiclist = getMusicList()
 		local sw, sh = getScreenResolution()
@@ -1724,7 +1799,7 @@ function imgui.OnDrawFrame()
 		imgui.End()
 	end
 	if win_state['mp3_informer'].v then -- окно информера
-		infoX, infoY = getScreenResolution() -- получаем размер экрана
+		infoX, infoY = getScreenResolution() -- получаем размер экрана 
 		imgui.SetNextWindowPos(imgui.ImVec2(infoX-400, infoY-50), imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(200, 200), imgui.Cond.FirstUseEver)
 
@@ -1776,7 +1851,7 @@ function imgui.OnDrawFrame()
 		imgui.Begin(fa(0xf0ed)..u8(' Обновление'), nil, imgui.WindowFlags.NoResize)
 
 		imgui.Text(u8'Обнаружено обновление до версии: '..updatever)
-
+		
 		imgui.Separator()
 
 		imgui.TextWrapped(u8("Для установки обновления необходимо подтверждение пользователя, разработчик настоятельно рекомендует принимать обновления ввиду того, что прошлые версии через определенное время отключаются и более не работают."))
@@ -1802,6 +1877,97 @@ function imgui.OnDrawFrame()
 			win_state['update'].v = not win_state['update'].v
 		end
 
+		imgui.End()
+	end
+	if win_state['chat_settings'].v then
+		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(600, 900), imgui.Cond.FirstUseEver)
+		imgui.Begin('chat settings', win_state['chat_settings'])
+		imgui.End()
+	end
+	if win_state['chat'].v then
+		local musiclist = getMusicList()
+		local sw, sh = getScreenResolution()
+		imgui.SetNextWindowPos(imgui.ImVec2(sw / 2, sh / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(810, 310), imgui.Cond.FirstUseEver)
+
+		imgui.Begin(fa(0xf0e0)..u8' Чат', win_state['chat'], imgui.WindowFlags.NoResize)
+
+		imgui.BeginChild('##chat', imgui.ImVec2(0, imgui.GetWindowHeight() - 55))
+		for i, chat_data in pairs(test_chat_data) do
+			c_username = 'nil'
+			c_message = 'nil'
+			c_status = 'nil'
+			c_time = 'nil'
+			for k, v in pairs(chat_data) do
+				if     k == 'username' then c_username = v
+				elseif k == 'message'  then c_message = v
+				elseif k == 'status'   then c_status = v
+				elseif k == 'time'     then c_time = v
+				end
+			end
+			local t = c_username == 'user'
+
+			local size = imgui.GetFont():CalcTextSizeA(imgui.GetFont().FontSize, 350.0, 346.0, c_username..'\n> '..c_message..'\n'..c_time:sub(3))
+			local x = size.x > 350 and 350 or size.x + imgui.GetStyle().ItemSpacing.x
+			if t then
+				imgui.NewLine()
+				imgui.SameLine(imgui.GetWindowWidth() - x - imgui.GetStyle().WindowPadding.x - (imgui.GetScrollMaxY() == 0 and 0 or imgui.GetStyle().ScrollbarSize))
+			end
+			
+			--imgui.PushStyleColor(imgui.Col.ChildWindowBg, imgui.ImColor(48, 134, 210, t == 1 and 113 or 90):GetVec4())
+			imgui.PushStyleColor(imgui.Col.ChildWindowBg, imgui.ImColor(200, 200, 200, 200):GetVec4())
+			imgui.PushStyleVar(imgui.StyleVar.WindowPadding, imgui.ImVec2(4.0, 2.0))
+			
+			imgui.BeginChild("##msg_"..i, imgui.ImVec2(x + 8.0, (size.y/2.8 + 4.0) * 3), false, imgui.WindowFlags.AlwaysUseWindowPadding + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoScrollWithMouse)
+			
+			local clr = nil
+			if c_status == 'user' then
+				--clr = '{222222}'
+				clr = imgui.ImVec4(0.2, 0.2, 0.2, 1.0)
+			elseif c_status == 'vip' then
+				--clr = '{111188}'
+				clr = imgui.ImVec4(0.1, 0.1, 0.4, 1.0)
+			elseif c_status == 'helper' then
+				--clr = '{117711}'
+				clr = imgui.ImVec4(0.1, 0.4, 0.1, 1.0)
+			elseif c_status == 'developer' then
+				--clr = '{881111}'
+				clr = imgui.ImVec4(0.4, 0.1, 0.1, 1.0)
+			end
+			--local fullText = clr..c_username..':{000000} '..c_message..'\n'..c_time
+			imgui.SetWindowFontScale(1.1)
+			imgui.TextColored(clr, c_username)
+
+			imgui.SetWindowFontScale(1.0)
+			imgui.TextColored(imgui.ImVec4(0.0, 0.0, 0.0, 1.0), '> '..c_message)
+
+			imgui.SetWindowFontScale(0.8)
+			imgui.NewLine()
+			imgui.SameLine(x - imgui.GetFont():CalcTextSizeA(imgui.GetFont().FontSize, 350.0, 346.0, c_time).x * 0.8)
+			imgui.TextColored(imgui.ImVec4(0.2, 0.2, 0.2, 1.0), c_time)
+			--imgui.TextColoredRGB(fullText)
+			
+			imgui.EndChild()
+			
+			imgui.PopStyleVar()
+			imgui.PopStyleColor()
+		end
+		imgui.EndChild()
+
+		imgui.PushItemWidth(imgui.GetWindowWidth() - imgui.CalcTextSize(u8('Отправить')).x - 20)
+		
+		imgui.InputText('##input', chat_text)
+		
+		imgui.PopItemWidth()
+		
+		imgui.SameLine()
+		
+		if imgui.Button(fa(0xf0da)) then
+			if #chat_text.v > 2 then
+				table.insert(test_chat_data, {["username"]="user", ["status"]="developer", ["time"]=os.date("%H:%M:%S"), ["message"]=chat_text.v}) chat_text.v = ''
+			end
+		end
 		imgui.End()
 	end
 end

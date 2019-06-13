@@ -3,7 +3,7 @@ script_name('GeekHelper')
 script_authors('Oniel', 'CzarAlex')
 script_version_number(1)
 script_version("0.1")
-
+local hook = require("samp.events")
 local res = pcall(require, "lib.moonloader")
 assert(res, 'Library lib.moonloader not found')
 
@@ -60,10 +60,7 @@ local bNotf, notf = pcall(import, "imgui_notf.lua")
 
 local res, md5 = pcall(require, 'md5')
 assert(res, 'Library md5 not found')
-
-require "luairc"
-
-IRCLogs = {}
+imgui.ToggleButton = require('imgui_addons').ToggleButton
 local ansi_decode={
   [128]='\208\130',[129]='\208\131',[130]='\226\128\154',[131]='\209\147',[132]='\226\128\158',[133]='\226\128\166',
   [134]='\226\128\160',[135]='\226\128\161',[136]='\226\130\172',[137]='\226\128\176',[138]='\208\137',[139]='\226\128\185',
@@ -107,8 +104,41 @@ local antiafkmode = imgui.ImBool(false)
 local selected = 1
 local searchBuf = imgui.ImBuffer(256)
 
+local stats = imgui.ImBool(false)
+local hiderezj = imgui.ImBool(false)
+local power = imgui.ImInt(1000)
+local clicks = imgui.ImInt(2)
+local waitautobuy = imgui.ImInt(1000)
+local vknotf = imgui.ImBool(false)
+
+local statika = {
+    ["clicks"] = 0,
+    ["income"] = 0,
+    ["buycount"] = 0
+}
+
+
+local auto_buy = {
+    imgui.ImBool(false), -- activation
+    imgui.ImBool(false),
+    imgui.ImBool(false),
+    imgui.ImBool(false),
+    imgui.ImBool(false),
+    imgui.ImBool(false),
+    imgui.ImBool(false),
+    imgui.ImBool(false),
+    imgui.ImBool(false),
+    imgui.ImBool(false)
+}
+
+local vkladki = {
+    true,
+    false,
+    false
+}
 
 local win_state = {}
+win_state['coins_gui'] = imgui.ImBool(false)
 win_state['chat_settings'] = imgui.ImBool(false)
 win_state['image'] = imgui.ImBool(true)
 win_state['update'] = imgui.ImBool(false)
@@ -240,119 +270,8 @@ function Utf8ToAnsi(s)
 	end
 	return r
 end
-require("config.SAMPIRC_Config") -- load configuration
-Channel = "#GeekHelper"
-Server = "irc.ircnet.ru"
 
-DebugMode = false
-local s = irc.new{nick = Nick}
-connected = false
-function GetState(var)
-	if var then
-	return "{00FF00}On"
-	else
-	return "{FF0000}Off"
-	end
-end
-function secondThread()
-	while not isSampfuncsLoaded() do
-		wait(1000)
-	end
-	if AutoConnect then
-		connected = true
-	end
-	sampRegisterChatCommand("irc_connection", ircmenu)
-	while true do
-		wait(0)
-		local resultMain, buttonMain, listMain = sampHasDialogRespond(154)
-		if resultMain == true then
-			if buttonMain == 1 then
-				if listMain == 0 then
-					sampShowDialog(1289, "Input", "Ник:", "Ok", "Exit", 1)
-				end
-				if listMain == 1 then
-					sampAddChatMessage("Connecting... (It may hang for a while, but it's normal!)", 0x00ff00)
-					connected = true
-				end
-				if listMain == 2 then
-					sampAddChatMessage("You disconnected", 0xff0000)
-					thisScript():reload()
-				end
-				if listMain == 3 then
-				sampAddChatMessage("Changed value!", -1)
-				irclogs = not irclogs
-				end
-				if listMain == 4 then
-				sampAddChatMessage("Changed value!", -1)
-				AutoConnect = not AutoConnect
-				end
-				if listMain == 5 then
-					sampAddChatMessage("Forceing save...", 0xB9C9BF)
-					saveChanges()
-					sampAddChatMessage("Save complete!", 0x00ff00)
-				end
-				if listMain == 6 then
-					sampShowDialog(1292, "Change value", "Enter 0 to off sound\nSound ID:", "Ok", "Exit", 1)
-				end
-				if listMain == 7 then
-					sampShowDialog(1293, "Change value", "{FF0000}This option may cause performance problems \nIRC Latency:", "Ok", "Exit", 1)
-				end
-				if listMain == 8 then
-				DebugMode = not DebugMode
-				sampAddChatMessage("Debug mode: "..GetState(DebugMode))
-				end
-			end
-			saveChanges()
-		end
-		local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1289)
-		if resultInput == true then
-		saveChanges()
-			if buttonInput == 1 then
-				Nick = stringInput
-				sampAddChatMessage("Now nick: " .. Nick, -1)
-			else sampAddChatMessage("You pressed Exit", -1)
-			end
-		end
-		local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1290)
-		if resultInput == true then
-			if buttonInput == 1 then
-				Server = stringInput
-				sampAddChatMessage("Now server: " .. Server, -1)
-			else sampAddChatMessage("You pressed Exit", -1)
-			end
-		end
-		local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1291)
-		if resultInput == true then
-			if buttonInput == 1 then
-				Channel = stringInput
-				sampAddChatMessage("Now channel: " .. Channel, -1)
-			else sampAddChatMessage("You pressed Exit", -1)
-			end
-		end
-		local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1292)
-		if resultInput == true then
-			if buttonInput == 1 then
-				MessageSound = stringInput
-				sampAddChatMessage("Now message sound ID: " .. MessageSound, -1)
-			else sampAddChatMessage("You pressed Exit", -1)
-			end
-		end
-		local resultInput, buttonInput, listInput, stringInput = sampHasDialogRespond(1293)
-		if resultInput == true then
-			if buttonInput == 1 then
-				IRCLatency = stringInput
-				sampAddChatMessage("Now IRC Latency: " .. IRCLatency, -1)
-			else sampAddChatMessage("You pressed Exit", -1)
-			end
-		end
-	end
-end
-function saveChanges()
-	file = io.open("moonloader/config/SAMPIRC_Config.lua", "w")
-	StrforSave = string.format('Nick = "%s"\nirclogs = %s\nAutoConnect = %s\nMessageSound = %d\nIRCLatency = %d',Nick, tostring(irclogs), tostring(AutoConnect), MessageSound, IRCLatency)
-	file:write(StrforSave)
-	file:close()
-end
+
 
 function imgui.TextColoredRGB(string)
     local style = imgui.GetStyle()
@@ -879,7 +798,7 @@ function Style(name)
 		imgui.GetStyle().Colors[imgui.Col.PlotHistogramHovered] = imgui.ImVec4(1.00, 0.60, 0.00, 1.00)
 		imgui.GetStyle().Colors[imgui.Col.TextSelectedBg]       = imgui.ImVec4(0.00, 0.00, 1.00, 0.35)
 		imgui.GetStyle().Colors[imgui.Col.ModalWindowDarkening] = imgui.ImVec4(0.20, 0.20, 0.20, 0.35)
-	
+
 	elseif name == 'Indigo' then
 		imgui.GetStyle().Colors[imgui.Col.Text]                 = imgui.ImVec4(0.86, 0.93, 0.89, 0.78)
 		imgui.GetStyle().Colors[imgui.Col.TextDisabled]         = imgui.ImVec4(0.92, 0.18, 0.29, 0.78)
@@ -1232,7 +1151,6 @@ function main()
 	if not isSampfuncsLoaded() or not isSampLoaded() then return end
 	while not isSampAvailable() do wait(0) end
 	wait(1000)
-	local thread1 = lua_thread.create(secondThread, false)
 	print("Начинаем подгрузку скрипта и его составляющих")
 	sampAddChatMessage("[GeekHelper] {FFFFFF}Скрипт подгружен в игру, версия: {00C2BB}"..thisScript().version.."{ffffff}, начинаем инициализацию.", 0x046D63)
 	print("Начинаем проверку обновлений.")
@@ -1253,35 +1171,6 @@ function main()
 	aerr = bass.BASS_StreamCreateFile(false, "moonloader/GeekHelper/audio/crash.mp3", 0, 0, 0) -- краш звук
 	bass.BASS_ChannelSetAttribute(aerr, BASS_ATTRIB_VOL, 3.0)
 	------------------------------------------------------------
-	local sleep = require "socket".sleep
-	sampRegisterChatCommand("irc", ircsend)
-	sampRegisterChatCommand("irc_pm", ircquery)
-	sampRegisterChatCommand("irc_raw", ircraw)
-	s:hook("OnChat", function(user, channel, message)
-	msgStr = Utf8ToAnsi(("[Chat] %s: %s"):format(user.nick, message))
-	sampAddChatMessage(msgStr, 0xffff00)
-	if irclogs then
-		table.insert(IRCLogs, #IRCLogs + 1, "["..os.date("%H:%M").."] "..msgStr)
-		fileLog = io.open("moonloader/IRCLOG.log", "w")
-		for i = 1, #IRCLogs do
-			fileLog:write(IRCLogs[i].."\n")
-		end
-		fileLog:close()
-	end
-	addOneOffSound(0.0, 0.0, 0.0, 1054)
-	end)
-	s:hook("OnRaw", function(line)
-	if DebugMode then
-		msgStrs = Utf8ToAnsi("[IRC] RAW: "..line)
-		sampAddChatMessage(msgStrs, 0xffff00)
-	end
-	end)
-	s:connect("irc.ircnet.ru")
-	SCM("Успешно подключились к чату!")
-	s:send("NICK %s", Nick)
-	wait(2500)
-	sampAddChatMessage("[Info] You can write messages with command - /irc <message> or /irc_pm <nick> <message> to write private message." , 0xffff00)
-	s:join("#GeekHelper")
 
 	Config:Load()
 	InitializeLocalizations()
@@ -1290,8 +1179,24 @@ function main()
 
 	while true do
 		imgui.Process = win_state['main'].v or win_state['mp3_informer'].v
-		wait(IRCLatency)
-		s:think()
+		if stats.v and sampIsLocalPlayerSpawned() then
+				wait(power.v)
+				for i = 0, clicks.v - 1 do
+						sampSendClickTextdraw(2104)
+						statika["clicks"] = statika["clicks"] + 1
+				end
+		end
+		if auto_buy[1].v and stats.v and sampIsLocalPlayerSpawned() then
+				for i = 2,9 do
+						if auto_buy[i].v then
+								wait(waitautobuy.v)
+								sampSendClickTextdraw(2101)
+								sampSendDialogResponse(25012,1,i-2,0)
+								sampSendDialogResponse(25013,1,0,0)
+								statika["buycount"] = statika["buycount"] + 1
+						end
+				end
+		end
 		if hparmCout.v then
 			hparmRender()
 		end
@@ -1302,29 +1207,9 @@ function main()
 		end
 		wait(0)
 	end
-																														   
+
 end
 
-function ircsend(param)
-	sampAddChatMessage(u8"[ЧАТ]: "..param, 0xffff00)
-	sendstr = AnsiToUtf8(param)
-	s:sendChat(Channel, sendstr)
-end
-
-function ircquery(param)
-	nick_send, msg = string.match(param, "^(%S*)%s(.*)$")
-	sampAddChatMessage("[IRC] [PM Send]: "..tostring(nick_send).." "..tostring(msg), 0xffff00)
-	sendstr = AnsiToUtf8(string.format("PRIVMSG %s :%s", nick_send, msg))
-	s:send(sendstr)
-end
-function ircraw(param)
-	sampAddChatMessage("[IRC] [RAW SEND]: "..param, 0xffff00)
-	sendstr = AnsiToUtf8(param)
-	s:send("%s", sendstr)
-end
-function ircmenu()
-	sampShowDialog(154, "SAMPIrcClient Menu | Connected: {0000FF}"..GetState(connected), string.format("Nickname: %s \n{00ff00}Connect\n{ff0000}Disconnect\nLogging: {FF0000}%s\nAuto connect: {FF0000}%s\nForce save settings\nMessage Sound: {FF0000}%d\nIRC Latency: {FF0000}%d\nDebug: {FF0000}%s", Nick, GetState(irclogs), GetState(AutoConnect), MessageSound, IRCLatency, GetState(DebugMode)), "Select", "Exit", 2)
-end
 
 function hparmRender()
 	useRenderCommands(true) -- use lua render
@@ -1479,14 +1364,14 @@ img = imgui.CreateTextureFromFile(getGameDirectory()..'\\moonloader\\GeekHelper\
 function anime()
 	w, h = getScreenResolution()
 	aw, ah = 313, 320
-	
+
 	imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0, 0, 0, 0))
 	imgui.SetNextWindowPos(imgui.ImVec2(0, h - ah))
-	
+
 	imgui.Begin('', win_state['image'], imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoMove + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoScrollWithMouse + imgui.WindowFlags.NoCollapse + imgui.WindowFlags.AlwaysAutoResize)
 
 	imgui.Image(img, imgui.ImVec2(aw, ah))
-	
+
 	imgui.End()
 
 	imgui.PopStyleColor()
@@ -1590,7 +1475,7 @@ function imgui.OnDrawFrame()
 
 		--imgui.Begin(fa(0xf121)..u8' GeekHelper', win_state['main'], imgui.WindowFlags.NoResize)
 		imgui.Begin(fa(0xf121)..u8(Localization:get('title')..'###MainTitle'), win_state['main'], imgui.WindowFlags.NoResize)
-		
+
 		if imgui.Button(fa(0xf085)..u8' Настройки', btn_size) then
 			win_state['settings'].v = not win_state['settings'].v
 		end
@@ -1610,7 +1495,9 @@ function imgui.OnDrawFrame()
 		if imgui.Button(fa.ICON_PLAY..u8' MP3 Player', btn_size) then
 			win_state['mp3'].v = not win_state['mp3'].v
 		end
-
+		if imgui.Button(u8' Arizona CoinBot', btn_size) then
+			win_state['coins_gui'].v = not win_state['coins_gui'].v
+		end
 		if imgui.Button(fa(0xf0e0)..u8' Чат', btn_size) then
 			win_state['chat'].v = not win_state['chat'].v
 		end
@@ -1637,7 +1524,7 @@ function imgui.OnDrawFrame()
 	if win_state['settings'].v then
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(600, 900), imgui.Cond.FirstUseEver)
-		
+
 		imgui.Begin(fa(0xf085)..u8' Настройки', win_state['settings'])
 
 		imgui.Text('text')
@@ -1665,12 +1552,12 @@ function imgui.OnDrawFrame()
 		imgui.RadioButton('radio1', rb, 0)
 		imgui.RadioButton('radio2', rb, 1)
 		imgui.Text('radio: '..rb.v)
-		
+
 		imgui.Combo('combo', c, {'item1', 'item2', 'item3'}, 3)
 
 		imgui.InputText('inputtext', it)
 		imgui.Text('text: '..it.v)
-		
+
 		imgui.DragFloat('dragfloat', df, imgui.ImFloat(0.001), 0, 100, '%.3f', imgui.ImFloat(0.001))
 
 		imgui.SliderFloat('sliderfloat', sf, 0, 100, '%.3f', imgui.ImFloat(0.001))
@@ -1690,7 +1577,7 @@ function imgui.OnDrawFrame()
 		for ind, lng in pairs(Config.lang) do
 			imgui.RadioButton(lng, lang_num, ind - 1)
 		end
-		
+
 		imgui.NextColumn()
 		imgui.Text('button pressed: '..tostring(pres))
 		imgui.ColorPicker4('colorpicker4', f4)
@@ -1799,7 +1686,7 @@ function imgui.OnDrawFrame()
 		imgui.End()
 	end
 	if win_state['mp3_informer'].v then -- окно информера
-		infoX, infoY = getScreenResolution() -- получаем размер экрана 
+		infoX, infoY = getScreenResolution() -- получаем размер экрана
 		imgui.SetNextWindowPos(imgui.ImVec2(infoX-400, infoY-50), imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(200, 200), imgui.Cond.FirstUseEver)
 
@@ -1851,7 +1738,7 @@ function imgui.OnDrawFrame()
 		imgui.Begin(fa(0xf0ed)..u8(' Обновление'), nil, imgui.WindowFlags.NoResize)
 
 		imgui.Text(u8'Обнаружено обновление до версии: '..updatever)
-		
+
 		imgui.Separator()
 
 		imgui.TextWrapped(u8("Для установки обновления необходимо подтверждение пользователя, разработчик настоятельно рекомендует принимать обновления ввиду того, что прошлые версии через определенное время отключаются и более не работают."))
@@ -1878,6 +1765,78 @@ function imgui.OnDrawFrame()
 		end
 
 		imgui.End()
+	end
+
+	if win_state['coins_gui'].v then
+			local btn_size = imgui.ImVec2(-0.1, 50)
+			local sw, sh = getScreenResolution()
+			imgui.SetNextWindowPos(imgui.ImVec2(sw / 2, sh / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+			imgui.SetNextWindowSize(imgui.ImVec2(450, 250), imgui.Cond.FirstUseEver)
+			imgui.Begin("Arizona Coins bot", coins_gui, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize)
+			imgui.BeginChild("##1", imgui.ImVec2(150, 215), true)
+			if imgui.Button(u8"Настройки бота", imgui.ImVec2(130, 30)) then
+					o_O()
+					vkladki[1] = true
+			end
+			if imgui.Button(u8"Статистика", imgui.ImVec2(130, 30)) then
+					o_O()
+					vkladki[2] = true
+			end
+			if imgui.Button(u8"Авто-покупка", imgui.ImVec2(130, 30)) then
+					o_O()
+					vkladki[3] = true
+			end
+			imgui.EndChild()
+			imgui.SameLine(170)
+			imgui.BeginChild("##2", imgui.ImVec2(270, 215), true)
+			if vkladki[1] then
+					imgui.Text(u8"Включить/откючить бота")
+					imgui.SameLine(230)
+					imgui.ToggleButton("##1", stats)
+					imgui.Text(u8"Работа в свернутом режиме")
+					imgui.SameLine(230)
+					if imgui.ToggleButton("##2", hiderezj) then
+							if hiderezj.v then WorkInBackground(true)
+							else WorkInBackground(false) end
+					end
+					imgui.Separator()
+					imgui.NewLine()
+					imgui.Text(u8"Здержка")
+					imgui.SameLine(80)
+					imgui.SliderInt("", power, 20, 10000)
+					imgui.Text(u8"Мощность")
+					imgui.SameLine(80)
+					imgui.SliderInt(" ", clicks, 1, 50)
+			end
+			if vkladki[2] then
+					imgui.Text(u8"Количество сделанных нажатий: " .. statika["clicks"])
+					imgui.Text(u8"Текущее количество коинов: " .. statika["income"])
+					imgui.Text(u8"Куплено улучшений: " .. statika["buycount"])
+					imgui.SetCursorPos(imgui.ImVec2(0, 180))
+					if imgui.Button(u8"Обнулить статистику", imgui.ImVec2(270, 30)) then
+							statika["clicks"] = 0
+							statika["buycount"] = 0
+					end
+			end
+			if vkladki[3] then
+					imgui.Text(u8"Авто-покупка улучшений")
+					imgui.SameLine(220)
+					imgui.ToggleButton("##2", auto_buy[1])
+					imgui.Text(u8"Задержка")
+					imgui.SameLine(70)
+					imgui.SliderInt("", waitautobuy, 20,50000)
+					imgui.Separator()
+					imgui.SetCursorPos(imgui.ImVec2(8, 60))
+					imgui.Checkbox(u8"Клик мышки", auto_buy[2])
+					imgui.Checkbox(u8"Видеокарта", auto_buy[3])
+					imgui.Checkbox(u8"Стойка видеокарт", auto_buy[4])
+					imgui.Checkbox(u8"Суперкомпьютер", auto_buy[5])
+					imgui.Checkbox(u8"Сервер Arizona Games", auto_buy[6])
+					imgui.Checkbox(u8"Квантовый компьютер", auto_buy[7])
+					imgui.Checkbox(u8"Датацентр", auto_buy[8])
+			end
+			imgui.EndChild()
+			imgui.End()
 	end
 	if win_state['chat_settings'].v then
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
@@ -1914,13 +1873,13 @@ function imgui.OnDrawFrame()
 				imgui.NewLine()
 				imgui.SameLine(imgui.GetWindowWidth() - x - imgui.GetStyle().WindowPadding.x - (imgui.GetScrollMaxY() == 0 and 0 or imgui.GetStyle().ScrollbarSize))
 			end
-			
+
 			--imgui.PushStyleColor(imgui.Col.ChildWindowBg, imgui.ImColor(48, 134, 210, t == 1 and 113 or 90):GetVec4())
 			imgui.PushStyleColor(imgui.Col.ChildWindowBg, imgui.ImColor(200, 200, 200, 200):GetVec4())
 			imgui.PushStyleVar(imgui.StyleVar.WindowPadding, imgui.ImVec2(4.0, 2.0))
-			
+
 			imgui.BeginChild("##msg_"..i, imgui.ImVec2(x + 8.0, (size.y/2.8 + 4.0) * 3), false, imgui.WindowFlags.AlwaysUseWindowPadding + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoScrollWithMouse)
-			
+
 			local clr = nil
 			if c_status == 'user' then
 				--clr = '{222222}'
@@ -1947,22 +1906,22 @@ function imgui.OnDrawFrame()
 			imgui.SameLine(x - imgui.GetFont():CalcTextSizeA(imgui.GetFont().FontSize, 350.0, 346.0, c_time).x * 0.8)
 			imgui.TextColored(imgui.ImVec4(0.2, 0.2, 0.2, 1.0), c_time)
 			--imgui.TextColoredRGB(fullText)
-			
+
 			imgui.EndChild()
-			
+
 			imgui.PopStyleVar()
 			imgui.PopStyleColor()
 		end
 		imgui.EndChild()
 
 		imgui.PushItemWidth(imgui.GetWindowWidth() - imgui.CalcTextSize(u8('Отправить')).x - 20)
-		
+
 		imgui.InputText('##input', chat_text)
-		
+
 		imgui.PopItemWidth()
-		
+
 		imgui.SameLine()
-		
+
 		if imgui.Button(fa(0xf0da)) then
 			if #chat_text.v > 2 then
 				table.insert(test_chat_data, {["username"]="user", ["status"]="developer", ["time"]=os.date("%H:%M:%S"), ["message"]=chat_text.v}) chat_text.v = ''
@@ -2009,4 +1968,54 @@ function strobes() -- стробоскопы
 			enableStrobes = false
 		end
 	end
+end
+function hook.onSendSpawn()
+    if stats.v then
+        lua_thread.create(function()
+            repeat wait(0) until sampIsLocalPlayerSpawned()
+            wait(1000)
+            sampSendChat("/phone")
+            sampSendDialogResponse(1000,1,0,0)
+            sampSendClickTextdraw(2119)
+        end)
+    end
+end
+
+function hook.onSendClickTextDraw(id)
+    if id == 65535 and stats.v then return false end
+end
+
+function hook.onShowDialog(id)
+    if stats.v and auto_buy[1].v then
+        if id == 25012 or id == 25013 then
+            return false
+        end
+    end
+end
+
+function o_O()
+    for i = 0,4 do
+        vkladki[i] = false
+    end
+end
+
+function hook.onTextDrawSetString(id,string)
+    if id == 2103 then
+        statika["income"] = tonumber(string)
+    end
+end
+
+function WorkInBackground(work)
+    local memory = require 'memory'
+    if work then
+        memory.setuint8(7634870, 1)
+        memory.setuint8(7635034, 1)
+        memory.fill(7623723, 144, 8)
+        memory.fill(5499528, 144, 6)
+    else
+        memory.setuint8(7634870, 0)
+        memory.setuint8(7635034, 0)
+        memory.hex2bin('5051FF1500838500', 7623723, 8)
+        memory.hex2bin('0F847B010000', 5499528, 6)
+    end
 end
